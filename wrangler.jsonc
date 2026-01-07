@@ -3,6 +3,7 @@
   "name": "worker-logs",
   "main": "src/index.ts",
   "compatibility_date": "2024-12-01",
+  // nodejs_compat_v2 includes RPC support (requires compat date >= 2024-04-03)
   "compatibility_flags": ["nodejs_compat_v2"],
 
   // Observability for debugging
@@ -22,7 +23,7 @@
     { "tag": "v1", "new_sqlite_classes": ["AppLogsDO"] }
   ]
 
-  // KV namespace will be added after creation with wrangler
+  // KV namespace - uncomment after creating with: wrangler kv namespace create LOGS_KV
   // "kv_namespaces": [
   //   { "binding": "LOGS_KV", "id": "<kv-id>" }
   // ]

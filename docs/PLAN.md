@@ -11,13 +11,17 @@ Centralized logging service for Cloudflare Workers using sharded D1 storage via 
 Each registered app gets its own `AppLogsDO` instance with isolated SQLite storage:
 
 ```typescript
-// Each DO instance has its own D1 storage
-export class AppLogsDO extends DurableObject {
-  sql: SqlStorage  // Auto-provisioned per DO instance
+import { DurableObject } from 'cloudflare:workers'
 
-  constructor(state: DurableObjectState, env: Env) {
-    super(state, env)
-    this.sql = state.storage.sql
+// Each DO instance has its own SQLite storage (via ctx.storage.sql)
+export class AppLogsDO extends DurableObject<Env> {
+  sql: SqlStorage
+
+  constructor(ctx: DurableObjectState, env: Env) {
+    // Required: call super() when extending DurableObject base class
+    super(ctx, env)
+    // Access SQLite via ctx.storage.sql (not state.storage.sql)
+    this.sql = ctx.storage.sql
     this.initSchema()
   }
 
@@ -31,8 +35,8 @@ export class AppLogsDO extends DurableObject {
         context TEXT,
         request_id TEXT
       );
-      CREATE INDEX IF NOT EXISTS idx_timestamp ON logs(timestamp DESC);
-      CREATE INDEX IF NOT EXISTS idx_level ON logs(level);
+      CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON logs(timestamp DESC);
+      CREATE INDEX IF NOT EXISTS idx_logs_level ON logs(level);
     `)
   }
 }
@@ -172,12 +176,20 @@ RPC bindings are internal-only and trusted - no auth required.
 
 ## Health Monitoring (DO Alarms)
 
-Each `AppLogsDO` uses alarms to periodically check registered URLs:
+Each `AppLogsDO` uses alarms to periodically check registered URLs. Key points from Cloudflare docs:
+- Only one alarm per DO instance at a time
+- Alarms have guaranteed at-least-once execution with exponential backoff retries
+- Check for existing alarm in constructor before setting a new one
 
 ```typescript
 // In app-logs-do.ts
-export class AppLogsDO extends DurableObject {
-  async alarm() {
+export class AppLogsDO extends DurableObject<Env> {
+  // Alarm handler receives optional alarmInfo with retry details
+  async alarm(alarmInfo?: { retryCount: number; isRetry: boolean }) {
+    if (alarmInfo?.isRetry) {
+      console.log(`Alarm retry attempt ${alarmInfo.retryCount}`)
+    }
+
     const urls = await this.getHealthUrls()
     for (const url of urls) {
       const start = Date.now()
@@ -188,8 +200,16 @@ export class AppLogsDO extends DurableObject {
         await this.recordHealthCheck(url, 0, Date.now() - start)
       }
     }
-    // Schedule next alarm (e.g., 5 minutes)
-    await this.state.storage.setAlarm(Date.now() + 5 * 60 * 1000)
+    // Schedule next alarm (e.g., 5 minutes) - use ctx.storage not this.state
+    await this.ctx.storage.setAlarm(Date.now() + 5 * 60 * 1000)
+  }
+
+  // Check existing alarm before setting new one in any init method
+  async initHealthChecks(urls: string[]) {
+    const existingAlarm = await this.ctx.storage.getAlarm()
+    if (!existingAlarm) {
+      await this.ctx.storage.setAlarm(Date.now() + 5 * 60 * 1000)
+    }
   }
 }
 ```
