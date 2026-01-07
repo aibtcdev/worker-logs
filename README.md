@@ -9,17 +9,36 @@ Centralized logging service for Cloudflare Workers.
 - **Health monitoring** - Periodic URL checks via DO alarms
 - **Result types** - Ok/Err response format for clarity
 
-## Quick Start
+## Setup
+
+### 1. Cloudflare API Token
+
+Create a token at https://dash.cloudflare.com/profile/api-tokens using the "Edit Cloudflare Workers" template, then add:
+- **Workers KV Storage: Edit**
+- **Account Settings: Read**
+
+### 2. Environment Variables
+
+Copy `.env.example` to `.env` and fill in your credentials:
 
 ```bash
-# Install dependencies
+cp .env.example .env
+# Edit .env with your CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID
+```
+
+### 3. Install & Run
+
+```bash
 npm install
+npm run dev      # Local development
+npm run deploy   # Deploy to Cloudflare
+```
 
-# Run locally
-npm run dev
+### 4. Create KV Namespace (after first deploy)
 
-# Deploy
-npm run deploy
+```bash
+npm run wrangler -- kv namespace create LOGS_KV
+# Add the returned ID to wrangler.jsonc
 ```
 
 ## Usage
