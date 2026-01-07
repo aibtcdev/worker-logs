@@ -9,6 +9,12 @@ import { requireApiKey } from './middleware/auth'
 // Re-export AppLogsDO for wrangler to find
 export { AppLogsDO } from './durable-objects/app-logs-do'
 
+// Re-export RPC entrypoint for service bindings
+export { LogsRPC } from './rpc'
+
+// Re-export types for consumers
+export type { LogInput, LogEntry, LogLevel, QueryFilters, DailyStats } from './types'
+
 type Variables = {
   appId: string
 }
