@@ -39,16 +39,16 @@ app.get('/', (c) => {
       version: '0.3.0',
       description: 'Centralized logging service for Cloudflare Workers',
       endpoints: {
-        'POST /logs': 'Write log entries (requires X-App-ID header)',
-        'GET /logs': 'Query log entries (requires X-App-ID header)',
+        'POST /logs': 'Write log entries (requires API key)',
+        'GET /logs': 'Query log entries (requires API key)',
         'GET /health/:app_id': 'Get health check history',
         'GET /stats/:app_id': 'Get daily stats (last 7 days)',
-        'POST /apps/:app_id/prune': 'Delete old logs',
-        'POST /apps/:app_id/health-urls': 'Set health check URLs',
+        'POST /apps/:app_id/prune': 'Delete old logs (requires API key)',
+        'POST /apps/:app_id/health-urls': 'Set health check URLs (requires API key)',
         'GET /apps': 'List registered apps',
         'POST /apps': 'Register a new app',
         'GET /apps/:app_id': 'Get app details',
-        'DELETE /apps/:app_id': 'Delete an app',
+        'DELETE /apps/:app_id': 'Delete an app (requires API key)',
       },
     })
   )
@@ -142,9 +142,15 @@ app.get('/stats/:app_id', async (c) => {
   return c.json(Ok(result.data))
 })
 
-// POST /apps/:app_id/prune - Delete old logs
-app.post('/apps/:app_id/prune', async (c) => {
+// POST /apps/:app_id/prune - Delete old logs (requires API key)
+app.post('/apps/:app_id/prune', requireApiKey, async (c) => {
   const appId = c.req.param('app_id')
+  const authenticatedAppId = c.get('appId')
+
+  if (appId !== authenticatedAppId) {
+    return c.json(Err({ code: ErrorCode.UNAUTHORIZED, message: 'App ID mismatch' }), 403)
+  }
+
   const body = await c.req.json<{ before: string }>()
 
   if (!body.before) {
@@ -160,9 +166,15 @@ app.post('/apps/:app_id/prune', async (c) => {
   return c.json(await res.json())
 })
 
-// POST /apps/:app_id/health-urls - Set health check URLs
-app.post('/apps/:app_id/health-urls', async (c) => {
+// POST /apps/:app_id/health-urls - Set health check URLs (requires API key)
+app.post('/apps/:app_id/health-urls', requireApiKey, async (c) => {
   const appId = c.req.param('app_id')
+  const authenticatedAppId = c.get('appId')
+
+  if (appId !== authenticatedAppId) {
+    return c.json(Err({ code: ErrorCode.UNAUTHORIZED, message: 'App ID mismatch' }), 403)
+  }
+
   const body = await c.req.json<{ urls: string[] }>()
 
   if (!body.urls || !Array.isArray(body.urls)) {
@@ -234,9 +246,14 @@ app.get('/apps/:app_id', async (c) => {
   return c.json(Ok(safeData))
 })
 
-// DELETE /apps/:app_id - Delete an app
-app.delete('/apps/:app_id', async (c) => {
+// DELETE /apps/:app_id - Delete an app (requires API key)
+app.delete('/apps/:app_id', requireApiKey, async (c) => {
   const appId = c.req.param('app_id')
+  const authenticatedAppId = c.get('appId')
+
+  if (appId !== authenticatedAppId) {
+    return c.json(Err({ code: ErrorCode.UNAUTHORIZED, message: 'App ID mismatch' }), 403)
+  }
 
   if (!c.env.LOGS_KV) {
     return c.json(Err({ code: ErrorCode.INTERNAL_ERROR, message: 'KV namespace not configured' }), 500)
