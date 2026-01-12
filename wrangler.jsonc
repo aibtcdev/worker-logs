@@ -31,5 +31,42 @@
   // KV namespace for app registry and stats
   "kv_namespaces": [
     { "binding": "LOGS_KV", "id": "6255715dc02c4829b7d7c2986a3bf63a" }
-  ]
+  ],
+
+  /**
+   * Environments for aibtcdev fork
+   * Note: durable_objects, kv_namespaces are NOT inherited by environments.
+   * Each environment must explicitly define all bindings it needs.
+   *
+   * Secrets (set via `wrangler secret put --env <env>`):
+   * - ADMIN_API_KEY: Admin authentication key
+   */
+  "env": {
+    "staging": {
+      "name": "worker-logs-staging",
+      "workers_dev": false,
+      "routes": [{ "pattern": "logs.aibtc.dev", "custom_domain": true }],
+      "observability": { "enabled": true },
+      // Bindings must be duplicated per environment
+      "durable_objects": {
+        "bindings": [{ "name": "APP_LOGS_DO", "class_name": "AppLogsDO" }]
+      },
+      "kv_namespaces": [
+        { "binding": "LOGS_KV", "id": "fdc72c78421b417abce72ce9e7df4bcb" }
+      ]
+    },
+    "production": {
+      "name": "worker-logs-production",
+      "workers_dev": false,
+      "routes": [{ "pattern": "logs.aibtc.com", "custom_domain": true }],
+      "observability": { "enabled": true },
+      // Bindings must be duplicated per environment
+      "durable_objects": {
+        "bindings": [{ "name": "APP_LOGS_DO", "class_name": "AppLogsDO" }]
+      },
+      "kv_namespaces": [
+        { "binding": "LOGS_KV", "id": "6da10c0967534246be0cfbd4523ecc65" }
+      ]
+    }
+  }
 }

@@ -1,5 +1,8 @@
 # worker-logs
 
+> **Fork of [whoabuddy/worker-logs](https://github.com/whoabuddy/worker-logs)**
+> This fork maintains aibtcdev-specific deployment environments.
+
 Centralized logging service for Cloudflare Workers using SQLite-backed Durable Objects.
 
 ## Architecture
@@ -108,3 +111,40 @@ value TEXT NOT NULL   -- JSON (e.g., health_urls array)
 ### KV Registry
 - Key: `app:{app_id}` -> `{ name, api_key_hash, created_at, updated_at }`
 - Key: `apps` -> `string[]` (list of app IDs)
+
+## Fork Maintenance
+
+This repo is a fork of [whoabuddy/worker-logs](https://github.com/whoabuddy/worker-logs) with aibtcdev-specific deployment environments.
+
+### What stays upstream
+- All source code, features, and bug fixes
+- Documentation updates
+- Local development configuration
+
+### What's fork-specific
+- `wrangler.jsonc` environments for staging/production
+- Domain routes (`logs.aibtc.dev`, `logs.aibtc.com`)
+- KV namespace bindings for aibtcdev Cloudflare account
+
+### Deployment Environments
+
+| Environment | Domain | Deploy Command |
+|-------------|--------|----------------|
+| Local dev | localhost:8787 | `npm run dev` |
+| Staging | logs.aibtc.dev | `npm run deploy -- --env staging` |
+| Production | logs.aibtc.com | `npm run deploy -- --env production` |
+
+### Syncing with upstream
+
+```bash
+# Fetch upstream changes
+git fetch upstream
+
+# Rebase fork commits on top of upstream
+git rebase upstream/main
+
+# Force push to update fork
+git push --force-with-lease origin main
+```
+
+The fork should stay minimal - ideally 1 commit ahead of upstream containing only environment configuration.
