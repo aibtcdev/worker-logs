@@ -54,26 +54,7 @@ Tests use `@cloudflare/vitest-pool-workers` with `isolatedStorage: false` (requi
 
 ### Dashboard
 
-The web dashboard (`/dashboard`) uses cookie-based session auth with the admin key. For production, consider adding Cloudflare Access for zero-trust protection.
-
-### Cloudflare Access Setup (Optional)
-
-To add identity-based access to the dashboard:
-
-1. Go to Cloudflare Dashboard > Zero Trust > Access > Applications
-2. Click "Add an application" > Self-hosted
-3. Configure:
-   - Application name: `worker-logs-dashboard`
-   - Session duration: 24 hours
-   - Application domain: `logs.wbd.host`
-   - Path: `/dashboard*`
-4. Add a policy:
-   - Policy name: `Admin Access`
-   - Action: Allow
-   - Include: Email (your email) or Identity Provider group
-5. Save and deploy
-
-This adds SSO/MFA before requests reach the worker, without code changes.
+The web dashboard (`/dashboard`) uses cookie-based session auth with the admin key.
 
 ## Development Commands
 
