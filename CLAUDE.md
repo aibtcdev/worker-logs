@@ -15,10 +15,13 @@ Centralized logging service for Cloudflare Workers using SQLite-backed Durable O
 |------|---------|
 | `src/index.ts` | HTTP API routes, main worker entry |
 | `src/rpc.ts` | `LogsRPC` WorkerEntrypoint for service bindings |
+| `src/dashboard.ts` | Web dashboard UI for browsing logs |
 | `src/durable-objects/app-logs-do.ts` | Durable Object with SQLite for logs + stats |
 | `src/services/registry.ts` | App registration, API key management |
+| `src/services/stats.ts` | KV-based daily stats aggregation (legacy) |
 | `src/middleware/auth.ts` | API key + admin key authentication |
-| `src/utils/result.ts` | Ok/Err result type utilities |
+| `src/result.ts` | Ok/Err result type utilities |
+| `src/types.ts` | TypeScript type definitions |
 
 ## Testing
 
@@ -90,11 +93,11 @@ Set via `wrangler secret put`:
 ### logs table (per-DO SQLite)
 ```sql
 id TEXT PRIMARY KEY,
-level TEXT,      -- DEBUG | INFO | WARN | ERROR
-message TEXT,
-context TEXT,    -- JSON
-request_id TEXT,
-timestamp TEXT
+timestamp TEXT NOT NULL,
+level TEXT NOT NULL,  -- DEBUG | INFO | WARN | ERROR
+message TEXT NOT NULL,
+context TEXT,         -- JSON
+request_id TEXT
 ```
 
 ### daily_stats table (per-DO SQLite)
@@ -106,6 +109,21 @@ warn INTEGER DEFAULT 0,
 error INTEGER DEFAULT 0
 ```
 
+### health_checks table (per-DO SQLite)
+```sql
+id TEXT PRIMARY KEY,
+url TEXT NOT NULL,
+status INTEGER,       -- HTTP status code (0 = failed)
+latency_ms INTEGER,
+checked_at TEXT NOT NULL
+```
+
+### config table (per-DO SQLite)
+```sql
+key TEXT PRIMARY KEY,
+value TEXT NOT NULL   -- JSON (e.g., health_urls array)
+```
+
 ### KV Registry
 - Key: `app:{app_id}` -> `{ name, api_key_hash, created_at, updated_at }`
-- Key: `apps:index` -> `string[]` (list of app IDs)
+- Key: `apps` -> `string[]` (list of app IDs)

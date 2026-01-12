@@ -6,8 +6,10 @@ Centralized logging service for Cloudflare Workers.
 
 - **Sharded storage** - Each app gets isolated SQLite via Durable Objects
 - **Dual access** - RPC binding for internal workers, REST API with API key for external
+- **Web dashboard** - Browse and search logs at `/dashboard`
 - **Health monitoring** - Periodic URL checks via DO alarms
-- **Result types** - Ok/Err response format for clarity
+- **Daily stats** - Aggregated log counts by level
+- **Result types** - Ok/Err response format for consistency
 
 ## Setup
 
@@ -19,11 +21,11 @@ Create a token at https://dash.cloudflare.com/profile/api-tokens using the "Edit
 
 ### 2. Environment Variables
 
-Copy `.env.example` to `.env` and fill in your credentials:
+Create a `.env` file with your credentials:
 
 ```bash
-cp .env.example .env
-# Edit .env with your CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID
+CLOUDFLARE_API_TOKEN=your-api-token
+CLOUDFLARE_ACCOUNT_ID=your-account-id
 ```
 
 ### 3. Install & Run
@@ -31,10 +33,10 @@ cp .env.example .env
 ```bash
 npm install
 npm run dev      # Local development
-npm run deploy   # Deploy to Cloudflare
+npm run deploy   # Deploy to Cloudflare (or use CI/CD)
 ```
 
-### 4. Create KV Namespace (after first deploy)
+### 4. Create KV Namespace (first time only)
 
 ```bash
 npm run wrangler -- kv namespace create LOGS_KV
@@ -43,14 +45,16 @@ npm run wrangler -- kv namespace create LOGS_KV
 
 ### 5. Set Admin API Key
 
-App registration requires an admin key. Set it as a secret:
-
 ```bash
 npm run wrangler -- secret put ADMIN_API_KEY
 # Enter a secure random key (e.g., openssl rand -hex 24)
 ```
 
 ## Usage
+
+### Web Dashboard
+
+Access the dashboard at `/dashboard` to browse and search logs. Requires admin key login.
 
 ### REST API (External)
 
@@ -66,6 +70,11 @@ curl -X POST https://worker-logs.<your-domain>.workers.dev/logs \
 curl "https://worker-logs.<your-domain>.workers.dev/logs?level=ERROR&limit=10" \
   -H "X-App-ID: my-app" \
   -H "X-Api-Key: your-api-key"
+
+# Get daily stats
+curl "https://worker-logs.<your-domain>.workers.dev/stats/my-app?days=7" \
+  -H "X-App-ID: my-app" \
+  -H "X-Api-Key: your-api-key"
 ```
 
 ### RPC Binding (Internal Workers)
@@ -76,13 +85,14 @@ curl "https://worker-logs.<your-domain>.workers.dev/logs?level=ERROR&limit=10" \
 
 // Usage:
 await env.LOGS.info('my-app', 'User action', { userId: '123' })
+await env.LOGS.error('my-app', 'Something failed', { error: err.message })
 ```
 
 ## Testing
 
 ```bash
-npm test        # Run all tests
-npm run test:watch  # Watch mode
+npm test           # Run all tests
+npm run test:watch # Watch mode
 ```
 
 ## Documentation

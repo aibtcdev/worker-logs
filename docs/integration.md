@@ -220,11 +220,13 @@ async function sendLog(env: Env, level: string, message: string, context?: objec
 | `/logs` | POST | API Key | Write log(s) |
 | `/logs` | GET | API Key | Query logs |
 | `/apps` | POST | Admin Key | Register new app (returns API key) |
-| `/apps` | GET | None | List app IDs |
-| `/apps/:id` | GET | None | Get app details (no API key shown) |
+| `/apps` | GET | Admin Key | List registered apps |
+| `/apps/:id` | GET | API Key or Admin | Get app details |
 | `/apps/:id` | DELETE | API Key | Delete app (owner only) |
-| `/stats/:id` | GET | None | Get daily stats |
-| `/health/:id` | GET | None | Get health checks |
+| `/apps/:id/prune` | POST | API Key | Delete old logs |
+| `/apps/:id/health-urls` | POST | API Key | Set health check URLs |
+| `/stats/:id` | GET | API Key or Admin | Get daily stats |
+| `/health/:id` | GET | None | Get health check history |
 
 ## Best Practices
 
@@ -251,5 +253,6 @@ async function sendLog(env: Env, level: string, message: string, context?: objec
 
 Access logs through:
 
+- **Web Dashboard**: `https://logs.wbd.host/dashboard` (requires admin key login)
 - **HTTP API**: `GET https://logs.wbd.host/logs` with appropriate headers
 - **Stats**: `GET https://logs.wbd.host/stats/{app_id}` for daily aggregates
