@@ -2,19 +2,13 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "worker-logs",
   "main": "src/index.ts",
-  "compatibility_date": "2024-12-01",
-  // nodejs_compat_v2 includes RPC support (requires compat date >= 2024-04-03)
+  "compatibility_date": "2026-01-01",
   "compatibility_flags": ["nodejs_compat_v2"],
-
-  // Environment variables for testing (production uses secrets)
-  "vars": {
-    "ADMIN_API_KEY": "test-admin-key-for-development-only"
-  },
+  "workers_dev": true,
+  "preview_urls": true,
 
   // Custom domain route
-  "routes": [
-    { "pattern": "logs.wbd.host", "custom_domain": true }
-  ],
+  "routes": [{ "pattern": "logs.wbd.host", "custom_domain": true }],
 
   // Observability for debugging
   "observability": {
@@ -23,18 +17,14 @@
 
   // Durable Object bindings
   "durable_objects": {
-    "bindings": [
-      { "name": "APP_LOGS_DO", "class_name": "AppLogsDO" }
-    ]
+    "bindings": [{ "name": "APP_LOGS_DO", "class_name": "AppLogsDO" }]
   },
 
   // DO migrations - use new_sqlite_classes for SQLite-backed DOs
-  "migrations": [
-    { "tag": "v1", "new_sqlite_classes": ["AppLogsDO"] }
-  ],
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["AppLogsDO"] }],
 
   // KV namespace for app registry and stats
   "kv_namespaces": [
     { "binding": "LOGS_KV", "id": "6255715dc02c4829b7d7c2986a3bf63a" }
-  ],
+  ]
 }
