@@ -7,9 +7,6 @@
   "workers_dev": true,
   "preview_urls": true,
 
-  // Custom domain route
-  "routes": [{ "pattern": "logs.wbd.host", "custom_domain": true }],
-
   // Observability for debugging
   "observability": {
     "enabled": true
@@ -28,9 +25,9 @@
   // DO migrations - use new_sqlite_classes for SQLite-backed DOs
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["AppLogsDO"] }],
 
-  // KV namespace for app registry and stats
+  // KV namespace for app registry and stats (uses staging KV for local dev)
   "kv_namespaces": [
-    { "binding": "LOGS_KV", "id": "6255715dc02c4829b7d7c2986a3bf63a" }
+    { "binding": "LOGS_KV", "id": "fdc72c78421b417abce72ce9e7df4bcb" }
   ],
 
   /**
