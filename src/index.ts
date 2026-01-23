@@ -32,7 +32,7 @@ app.get('/', (c) => {
   return c.json(
     Ok({
       service: 'worker-logs',
-      version: '0.4.0',
+      version: '0.4.0', // x-release-please-version
       description: 'Centralized logging service for Cloudflare Workers',
       endpoints: {
         'GET /dashboard': 'Web UI for browsing logs (requires admin key)',
