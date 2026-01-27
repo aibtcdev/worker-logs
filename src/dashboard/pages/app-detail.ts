@@ -6,6 +6,8 @@ import { htmlDocument, header, statsCard } from '../components/layout'
 import { dailyStatsChartConfig, formatHealthStatus, determineHealthStatus } from '../components/charts'
 import { escapeHtml, styles } from '../styles'
 import type { DailyStats, LogEntry, HealthCheck } from '../../types'
+import type { BrandConfig } from '../brand'
+import { DEFAULT_BRAND_CONFIG } from '../brand'
 
 export interface AppDetailData {
   appId: string
@@ -15,7 +17,7 @@ export interface AppDetailData {
   healthUrls: string[]
 }
 
-export function appDetailPage(data: AppDetailData, apps: string[]): string {
+export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandConfig = DEFAULT_BRAND_CONFIG): string {
   const { appId, appName, stats, healthChecks, healthUrls } = data
 
   // Calculate totals for the period
@@ -43,7 +45,7 @@ export function appDetailPage(data: AppDetailData, apps: string[]): string {
   }
 
   const content = `
-  ${header({ currentView: 'app', currentApp: appId, apps })}
+  ${header({ currentView: 'app', currentApp: appId, apps, brand })}
 
   <main class="max-w-7xl mx-auto px-6 py-6" x-data="appDetailState()">
     <!-- App Header -->
@@ -422,5 +424,5 @@ export function appDetailPage(data: AppDetailData, apps: string[]): string {
     });
   </script>`
 
-  return htmlDocument(content, { title: `Worker Logs - ${appName}` })
+  return htmlDocument(content, { title: `Worker Logs - ${appName}`, brand })
 }

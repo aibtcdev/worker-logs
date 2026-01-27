@@ -5,12 +5,10 @@
 import type { Context } from 'hono'
 import type { Env } from '../types'
 
-type DashboardContext = Context<{ Bindings: Env }>
-
 /**
  * Get list of registered app IDs from KV
  */
-export async function getAppList(c: DashboardContext): Promise<string[]> {
+export async function getAppList(c: Context<{ Bindings: Env }>): Promise<string[]> {
   if (!c.env.LOGS_KV) return []
   const data = await c.env.LOGS_KV.get('apps')
   if (!data) return []
@@ -20,7 +18,7 @@ export async function getAppList(c: DashboardContext): Promise<string[]> {
 /**
  * Get app name from KV config
  */
-export async function getAppName(c: DashboardContext, appId: string): Promise<string> {
+export async function getAppName(c: Context<{ Bindings: Env }>, appId: string): Promise<string> {
   if (!c.env.LOGS_KV) return appId
   const data = await c.env.LOGS_KV.get(`app:${appId}`)
   if (!data) return appId
@@ -31,7 +29,7 @@ export async function getAppName(c: DashboardContext, appId: string): Promise<st
 /**
  * Get health URLs from KV config
  */
-export async function getHealthUrls(c: DashboardContext, appId: string): Promise<string[]> {
+export async function getHealthUrls(c: Context<{ Bindings: Env }>, appId: string): Promise<string[]> {
   if (!c.env.LOGS_KV) return []
   const data = await c.env.LOGS_KV.get(`app:${appId}`)
   if (!data) return []
