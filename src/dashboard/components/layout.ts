@@ -119,6 +119,7 @@ const brandCss = `
   /* Header brand styling */
   .brand-header {
     background: rgba(10,10,10,0.8);
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
   }
