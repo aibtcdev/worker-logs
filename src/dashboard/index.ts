@@ -15,28 +15,35 @@ import { overviewPage } from './pages/overview'
 import { appDetailPage, type AppDetailData } from './pages/app-detail'
 import { getOverview } from './api/overview'
 import { getAppList, getAppName, getHealthUrls } from './helpers'
+import { getBrandConfig, type BrandConfig } from './brand'
 
-const dashboard = new Hono<{ Bindings: Env }>()
+const dashboard = new Hono<{ Bindings: Env; Variables: { brand: BrandConfig } }>()
+
+// Resolve brand config from environment
+dashboard.use('*', async (c, next) => {
+  c.set('brand', getBrandConfig(c.env as unknown as Record<string, string | undefined>))
+  await next()
+})
 
 // Main dashboard entry - shows overview or login
 dashboard.get('/', async (c) => {
-  if (!await isAuthenticated(c)) {
-    return c.html(loginPage())
+  if (!await isAuthenticated(c as any)) {
+    return c.html(loginPage(undefined, c.get('brand')))
   }
 
-  const apps = await getAppList(c)
-  const overviewData = await getOverview(c)
-  return c.html(overviewPage(overviewData, apps))
+  const apps = await getAppList(c as any)
+  const overviewData = await getOverview(c as any)
+  return c.html(overviewPage(overviewData, apps, c.get('brand')))
 })
 
 // App detail page
 dashboard.get('/app/:app_id', async (c) => {
-  if (!await isAuthenticated(c)) {
-    return c.html(loginPage())
+  if (!await isAuthenticated(c as any)) {
+    return c.html(loginPage(undefined, c.get('brand')))
   }
 
   const appId = c.req.param('app_id')
-  const apps = await getAppList(c)
+  const apps = await getAppList(c as any)
 
   // Check if app exists
   if (!apps.includes(appId)) {
@@ -50,8 +57,8 @@ dashboard.get('/app/:app_id', async (c) => {
   const [statsRes, healthRes, appName, healthUrls] = await Promise.all([
     stub.fetch(new Request('http://do/stats?days=7')),
     stub.fetch(new Request('http://do/health?limit=50')),
-    getAppName(c, appId),
-    getHealthUrls(c, appId),
+    getAppName(c as any, appId),
+    getHealthUrls(c as any, appId),
   ])
 
   const statsData = await statsRes.json() as { ok: boolean; data: DailyStats[] }
@@ -65,7 +72,7 @@ dashboard.get('/app/:app_id', async (c) => {
     healthUrls,
   }
 
-  return c.html(appDetailPage(data, apps))
+  return c.html(appDetailPage(data, apps, c.get('brand')))
 })
 
 // Login handler
@@ -74,7 +81,7 @@ dashboard.post('/login', async (c) => {
   const adminKey = body.admin_key as string
 
   if (!adminKey || adminKey !== c.env.ADMIN_API_KEY) {
-    return c.html(loginPage('Invalid admin key'))
+    return c.html(loginPage('Invalid admin key', c.get('brand')))
   }
 
   const sessionHash = await hashAdminKey(adminKey)
@@ -90,27 +97,27 @@ dashboard.get('/logout', (c) => {
 
 // API: Get overview data
 dashboard.get('/api/overview', async (c) => {
-  if (!await isAuthenticated(c)) {
+  if (!await isAuthenticated(c as any)) {
     return c.json({ ok: false, error: 'Unauthorized' }, 401)
   }
 
-  const data = await getOverview(c)
+  const data = await getOverview(c as any)
   return c.json({ ok: true, data })
 })
 
 // API: List apps
 dashboard.get('/api/apps', async (c) => {
-  if (!await isAuthenticated(c)) {
+  if (!await isAuthenticated(c as any)) {
     return c.json({ ok: false, error: 'Unauthorized' }, 401)
   }
 
-  const apps = await getAppList(c)
+  const apps = await getAppList(c as any)
   return c.json({ ok: true, data: apps })
 })
 
 // API: Get logs for an app
 dashboard.get('/api/logs/:app_id', async (c) => {
-  if (!await isAuthenticated(c)) {
+  if (!await isAuthenticated(c as any)) {
     return c.json({ ok: false, error: 'Unauthorized' }, 401)
   }
 
@@ -129,7 +136,7 @@ dashboard.get('/api/logs/:app_id', async (c) => {
 
 // API: Get stats for an app
 dashboard.get('/api/stats/:app_id', async (c) => {
-  if (!await isAuthenticated(c)) {
+  if (!await isAuthenticated(c as any)) {
     return c.json({ ok: false, error: 'Unauthorized' }, 401)
   }
 
@@ -148,7 +155,7 @@ dashboard.get('/api/stats/:app_id', async (c) => {
 
 // API: Get health checks for an app
 dashboard.get('/api/health/:app_id', async (c) => {
-  if (!await isAuthenticated(c)) {
+  if (!await isAuthenticated(c as any)) {
     return c.json({ ok: false, error: 'Unauthorized' }, 401)
   }
 

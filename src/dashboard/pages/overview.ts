@@ -6,8 +6,10 @@ import { htmlDocument, header, statsCard } from '../components/layout'
 import { sparkline, formatTrend, formatHealthStatus, dailyStatsChartConfig } from '../components/charts'
 import { escapeHtml, styles } from '../styles'
 import type { OverviewResponse } from '../types'
+import type { BrandConfig } from '../brand'
+import { DEFAULT_BRAND_CONFIG } from '../brand'
 
-export function overviewPage(data: OverviewResponse, apps: string[]): string {
+export function overviewPage(data: OverviewResponse, apps: string[], brand: BrandConfig = DEFAULT_BRAND_CONFIG): string {
   const { totals, apps: appSummaries, recent_errors } = data
 
   const totalErrors = totals.today.error
@@ -21,7 +23,7 @@ export function overviewPage(data: OverviewResponse, apps: string[]): string {
   ]
 
   const content = `
-  ${header({ currentView: 'overview', apps })}
+  ${header({ currentView: 'overview', apps, brand })}
 
   <main class="max-w-7xl mx-auto px-6 py-6" x-data="overviewState()">
     <!-- Error Summary Cards -->
@@ -178,5 +180,5 @@ export function overviewPage(data: OverviewResponse, apps: string[]): string {
     }
   </script>`
 
-  return htmlDocument(content, { title: 'Worker Logs - Overview' })
+  return htmlDocument(content, { title: 'Worker Logs - Overview', brand })
 }

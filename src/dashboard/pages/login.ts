@@ -3,8 +3,10 @@
  */
 
 import { htmlDocument } from '../components/layout'
+import type { BrandConfig } from '../brand'
+import { DEFAULT_BRAND_CONFIG } from '../brand'
 
-export function loginPage(error?: string): string {
+export function loginPage(error?: string, brand: BrandConfig = DEFAULT_BRAND_CONFIG): string {
   const errorHtml = error
     ? `<div class="bg-red-900/50 border border-red-500 text-red-300 px-4 py-2 rounded mb-4">${error}</div>`
     : ''
@@ -13,7 +15,7 @@ export function loginPage(error?: string): string {
   <div class="min-h-screen flex items-center justify-center">
     <div class="brand-card rounded-lg p-8 shadow-xl w-full max-w-md">
       <div class="flex flex-col items-center mb-6">
-        <img src="https://aibtc.com/Primary_Logo/SVG/AIBTC_PrimaryLogo_KO.svg" alt="AIBTC" style="height: 36px; width: auto; margin-bottom: 16px;">
+        <img src="${brand.logoUrl}" alt="${brand.name}" style="height: 36px; width: auto; margin-bottom: 16px;">
         <h1 class="text-2xl font-bold text-center">Worker Logs</h1>
       </div>
       ${errorHtml}
@@ -38,5 +40,5 @@ export function loginPage(error?: string): string {
     </div>
   </div>`
 
-  return htmlDocument(content, { title: 'Worker Logs - Login' })
+  return htmlDocument(content, { title: 'Worker Logs - Login', brand })
 }
