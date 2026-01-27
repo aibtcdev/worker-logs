@@ -23,7 +23,7 @@ export function loginPage(error?: string): string {
           type="password"
           name="admin_key"
           class="w-full px-4 py-2 rounded"
-          style="background: #1a1a1a; border: 1px solid var(--border); color: var(--text-primary);"
+          style="background: var(--bg-hover); border: 1px solid var(--border); color: var(--text-primary);"
           placeholder="Enter admin key"
           required
           autofocus
