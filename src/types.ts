@@ -10,6 +10,16 @@ export interface Env {
   APP_LOGS_DO: DurableObjectNamespace
   LOGS_KV: KVNamespace
   ADMIN_API_KEY?: string
+  // Brand configuration (all optional, AIBTC defaults used if not set)
+  BRAND_NAME?: string
+  BRAND_ACCENT?: string
+  BRAND_CDN_URL?: string
+  BRAND_FONT_NAME?: string
+  BRAND_LOGO_URL?: string
+  BRAND_FAVICON_URL?: string
+  BRAND_FONT_REGULAR_URL?: string
+  BRAND_FONT_MEDIUM_URL?: string
+  BRAND_PATTERN_URL?: string
 }
 
 /**
