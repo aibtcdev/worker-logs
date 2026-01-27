@@ -3,34 +3,37 @@
  */
 
 import { logLevelCss } from '../styles'
+import { BrandConfig, DEFAULT_BRAND_CONFIG } from '../brand'
 
 export interface LayoutOptions {
   title?: string
   currentView?: 'overview' | 'app'
   currentApp?: string
   apps?: string[]
+  brand?: BrandConfig
 }
 
 /**
- * Brand CSS: fonts, variables, background, card effects
+ * Generate brand CSS from BrandConfig
  */
-const brandCss = `
+export function buildBrandCss(config: BrandConfig): string {
+  return `
   @font-face {
-    font-family: 'Roc Grotesk';
-    src: url('https://aibtc.com/fonts/RocGrotesk-Regular.woff2') format('woff2');
+    font-family: '${config.fontName}';
+    src: url('${config.fontRegularUrl}') format('woff2');
     font-weight: 400;
     font-display: swap;
   }
   @font-face {
-    font-family: 'Roc Grotesk';
-    src: url('https://aibtc.com/fonts/RocGrotesk-WideMedium.woff2') format('woff2');
+    font-family: '${config.fontName}';
+    src: url('${config.fontMediumUrl}') format('woff2');
     font-weight: 500;
     font-display: swap;
   }
   :root {
-    --accent: #FF4F03;
-    --accent-hover: #e54400;
-    --accent-dim: rgba(255, 79, 3, 0.12);
+    --accent: ${config.accentColor};
+    --accent-hover: ${config.accentHoverColor};
+    --accent-dim: ${config.accentDimColor};
     --bg-primary: #000;
     --bg-card: #0a0a0a;
     --bg-table-header: #111111;
@@ -47,7 +50,7 @@ const brandCss = `
   }
   * { box-sizing: border-box; }
   body {
-    font-family: 'Roc Grotesk', system-ui, -apple-system, sans-serif;
+    font-family: '${config.fontName}', system-ui, -apple-system, sans-serif;
     background: linear-gradient(135deg, #000000, #0a0a0a, #050208);
     color: var(--text-primary);
     min-height: 100vh;
@@ -57,7 +60,7 @@ const brandCss = `
     content: '';
     position: fixed;
     inset: 0;
-    background: url('https://aibtc.com/Artwork/AIBTC_Pattern1_optimized.jpg') center/cover;
+    background: url('${config.patternImageUrl}') center/cover;
     opacity: 0.12;
     filter: saturate(1.3);
     pointer-events: none;
@@ -75,7 +78,7 @@ const brandCss = `
   .bg-gray-600 { background-color: var(--bg-active-subtle) !important; }
   /* Brand accent overrides: all .text-blue-400 except log-level indicators */
   .text-blue-400:not(.log-level) { color: var(--accent) !important; }
-  .text-blue-400:not(.log-level):hover, .hover\\:text-blue-300:not(.log-level):hover { color: #ff7033 !important; }
+  .text-blue-400:not(.log-level):hover, .hover\\:text-blue-300:not(.log-level):hover { color: ${config.accentLightColor} !important; }
   .bg-blue-600 { background-color: var(--accent) !important; }
   .hover\\:bg-blue-700:hover { background-color: var(--accent-hover) !important; }
   .focus\\:border-blue-500:focus { border-color: var(--accent) !important; }
@@ -101,8 +104,8 @@ const brandCss = `
   }
   .brand-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(255, 79, 3, 0.08);
-    border-color: rgba(255, 79, 3, 0.3);
+    box-shadow: 0 4px 20px ${config.accentGlowColor};
+    border-color: ${config.accentBorderColor};
   }
   .brand-card::before {
     content: '';
@@ -144,6 +147,7 @@ const brandCss = `
   }
   .header-logo { height: 28px; width: auto; }
 `
+}
 
 /**
  * Card glow mouse tracking script
@@ -166,6 +170,7 @@ const cardGlowScript = `
  */
 export function htmlDocument(content: string, options: LayoutOptions = {}): string {
   const { title = 'Worker Logs' } = options
+  const brand = options.brand || DEFAULT_BRAND_CONFIG
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -173,14 +178,14 @@ export function htmlDocument(content: string, options: LayoutOptions = {}): stri
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
-  <link rel="icon" type="image/png" sizes="32x32" href="https://aibtc.com/favicon-32x32.png">
-  <link rel="dns-prefetch" href="https://aibtc.com">
-  <link rel="preload" href="https://aibtc.com/Artwork/AIBTC_Pattern1_optimized.jpg" as="image" type="image/jpeg">
+  <link rel="icon" type="image/png" sizes="32x32" href="${brand.faviconUrl}">
+  <link rel="dns-prefetch" href="${brand.cdnHost}">
+  <link rel="preload" href="${brand.patternImageUrl}" as="image" type="image/jpeg">
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    ${brandCss}
+    ${buildBrandCss(brand)}
     ${logLevelCss}
     [x-cloak] { display: none !important; }
   </style>
@@ -193,17 +198,18 @@ ${content}
 }
 
 /**
- * Dashboard header with navigation and AIBTC logo
+ * Dashboard header with navigation and brand logo
  */
 export function header(options: LayoutOptions = {}): string {
   const { currentView = 'overview', currentApp, apps = [] } = options
+  const brand = options.brand || DEFAULT_BRAND_CONFIG
 
   return `
   <header class="brand-header px-6 py-4">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
       <div class="flex items-center gap-6">
         <a href="/dashboard" class="flex items-center gap-3" style="color: inherit; text-decoration: none;">
-          <img src="https://aibtc.com/Primary_Logo/SVG/AIBTC_PrimaryLogo_KO.svg" alt="AIBTC" class="header-logo">
+          <img src="${brand.logoUrl}" alt="${brand.name}" class="header-logo">
           <span class="text-lg font-medium" style="color: var(--text-secondary);">Worker Logs</span>
         </a>
         <nav class="flex gap-1">
