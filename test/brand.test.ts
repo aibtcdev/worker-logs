@@ -46,6 +46,14 @@ describe('Brand configuration', () => {
       expect(hexToRgba('#000000', 1)).toBe('rgba(0, 0, 0, 1)')
       expect(hexToRgba('#ffffff', 1)).toBe('rgba(255, 255, 255, 1)')
     })
+
+    it('returns fallback for invalid hex strings', () => {
+      expect(hexToRgba('', 1)).toBe('rgba(0, 0, 0, 1)')
+      expect(hexToRgba('GGGGGG', 0.5)).toBe('rgba(0, 0, 0, 0.5)')
+      expect(hexToRgba('#12345', 1)).toBe('rgba(0, 0, 0, 1)')
+      expect(hexToRgba('#12345G', 1)).toBe('rgba(0, 0, 0, 1)')
+      expect(hexToRgba('xyz', 0.3)).toBe('rgba(0, 0, 0, 0.3)')
+    })
   })
 
   describe('getBrandConfig', () => {
@@ -120,6 +128,12 @@ describe('Brand configuration', () => {
       expect(config.patternImageUrl).toBe(
         'https://cdn.example.com/Artwork/Acme_Pattern1_optimized.jpg'
       )
+    })
+
+    it('falls back to default accent when BRAND_ACCENT is invalid', () => {
+      const config = getBrandConfig({ BRAND_ACCENT: 'not-a-color' })
+      expect(config.accentColor).toBe(DEFAULT_BRAND_CONFIG.accentColor)
+      expect(config.accentDimColor).not.toContain('NaN')
     })
   })
 })

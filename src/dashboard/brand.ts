@@ -2,6 +2,23 @@
  * Brand configuration for dashboard customization
  */
 
+const HEX_COLOR_RE = /^#?[0-9a-fA-F]{6}$/
+
+/**
+ * Environment variables that control branding
+ */
+export interface BrandEnv {
+  BRAND_NAME?: string
+  BRAND_ACCENT?: string
+  BRAND_CDN_URL?: string
+  BRAND_FONT_NAME?: string
+  BRAND_LOGO_URL?: string
+  BRAND_FAVICON_URL?: string
+  BRAND_FONT_REGULAR_URL?: string
+  BRAND_FONT_MEDIUM_URL?: string
+  BRAND_PATTERN_URL?: string
+}
+
 /**
  * Complete brand configuration interface
  */
@@ -46,10 +63,11 @@ export const DEFAULT_BRAND_CONFIG: BrandConfig = {
  * Convert hex color to rgba string
  */
 export function hexToRgba(hex: string, alpha: number): string {
-  // Remove # if present
-  const cleanHex = hex.replace(/^#/, '')
+  if (!HEX_COLOR_RE.test(hex)) {
+    return `rgba(0, 0, 0, ${alpha})`
+  }
 
-  // Parse hex values
+  const cleanHex = hex.replace(/^#/, '')
   const r = parseInt(cleanHex.substring(0, 2), 16)
   const g = parseInt(cleanHex.substring(2, 4), 16)
   const b = parseInt(cleanHex.substring(4, 6), 16)
@@ -71,12 +89,12 @@ export function hexToRgba(hex: string, alpha: number): string {
  * - BRAND_FONT_MEDIUM_URL: Full font medium URL override
  * - BRAND_PATTERN_URL: Full pattern image URL override
  */
-export function getBrandConfig(env: Record<string, string | undefined>): BrandConfig {
+export function getBrandConfig(env: BrandEnv): BrandConfig {
   const cdnUrl = env.BRAND_CDN_URL || DEFAULT_BRAND_CONFIG.cdnHost
-  const accentHex = env.BRAND_ACCENT || DEFAULT_BRAND_CONFIG.accentColor
+  const rawAccent = env.BRAND_ACCENT || DEFAULT_BRAND_CONFIG.accentColor
+  const accentHex = HEX_COLOR_RE.test(rawAccent) ? rawAccent : DEFAULT_BRAND_CONFIG.accentColor
 
   // Derive accent variations from base accent color
-  const accentRgb = hexToRgba(accentHex, 1)
   const r = parseInt(accentHex.replace(/^#/, '').substring(0, 2), 16)
   const g = parseInt(accentHex.replace(/^#/, '').substring(2, 4), 16)
   const b = parseInt(accentHex.replace(/^#/, '').substring(4, 6), 16)

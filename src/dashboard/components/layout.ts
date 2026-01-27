@@ -2,7 +2,7 @@
  * Shared layout components for the dashboard
  */
 
-import { logLevelCss } from '../styles'
+import { logLevelCss, escapeHtml } from '../styles'
 import { BrandConfig, DEFAULT_BRAND_CONFIG } from '../brand'
 
 export interface LayoutOptions {
@@ -178,9 +178,9 @@ export function htmlDocument(content: string, options: LayoutOptions = {}): stri
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
-  <link rel="icon" type="image/png" sizes="32x32" href="${brand.faviconUrl}">
-  <link rel="dns-prefetch" href="${brand.cdnHost}">
-  <link rel="preload" href="${brand.patternImageUrl}" as="image" type="image/jpeg">
+  <link rel="icon" type="image/png" sizes="32x32" href="${escapeHtml(brand.faviconUrl)}">
+  <link rel="dns-prefetch" href="${escapeHtml(brand.cdnHost)}">
+  <link rel="preload" href="${escapeHtml(brand.patternImageUrl)}" as="image" type="image/jpeg">
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -209,7 +209,7 @@ export function header(options: LayoutOptions = {}): string {
     <div class="max-w-7xl mx-auto flex items-center justify-between">
       <div class="flex items-center gap-6">
         <a href="/dashboard" class="flex items-center gap-3" style="color: inherit; text-decoration: none;">
-          <img src="${brand.logoUrl}" alt="${brand.name}" class="header-logo">
+          <img src="${escapeHtml(brand.logoUrl)}" alt="${escapeHtml(brand.name)}" class="header-logo">
           <span class="text-lg font-medium" style="color: var(--text-secondary);">Worker Logs</span>
         </a>
         <nav class="flex gap-1">

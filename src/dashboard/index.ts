@@ -21,7 +21,7 @@ const dashboard = new Hono<{ Bindings: Env; Variables: { brand: BrandConfig } }>
 
 // Resolve brand config from environment
 dashboard.use('*', async (c, next) => {
-  c.set('brand', getBrandConfig(c.env as unknown as Record<string, string | undefined>))
+  c.set('brand', getBrandConfig(c.env))
   await next()
 })
 
