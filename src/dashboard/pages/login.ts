@@ -11,22 +11,26 @@ export function loginPage(error?: string): string {
 
   const content = `
   <div class="min-h-screen flex items-center justify-center">
-    <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md">
-      <h1 class="text-2xl font-bold mb-6 text-center">Worker Logs</h1>
+    <div class="brand-card rounded-lg p-8 shadow-xl w-full max-w-md">
+      <div class="flex flex-col items-center mb-6">
+        <img src="https://aibtc.com/Primary_Logo/SVG/AIBTC_PrimaryLogo_KO.svg" alt="AIBTC" style="height: 36px; width: auto; margin-bottom: 16px;">
+        <h1 class="text-2xl font-bold text-center">Worker Logs</h1>
+      </div>
       ${errorHtml}
       <form method="POST" action="/dashboard/login">
-        <label class="block mb-2 text-sm text-gray-400">Admin Key</label>
+        <label class="block mb-2 text-sm" style="color: var(--text-muted);">Admin Key</label>
         <input
           type="password"
           name="admin_key"
-          class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+          class="w-full px-4 py-2 rounded"
+          style="background: var(--bg-hover); border: 1px solid var(--border); color: var(--text-primary);"
           placeholder="Enter admin key"
           required
           autofocus
         />
         <button
           type="submit"
-          class="w-full mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium transition-colors"
+          class="w-full mt-4 px-4 py-2 rounded font-medium transition-colors btn-accent"
         >
           Login
         </button>

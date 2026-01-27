@@ -103,18 +103,18 @@ export function dailyStatsChartConfig(
       plugins: {
         legend: {
           position: 'bottom',
-          labels: { color: '#9CA3AF' },
+          labels: { color: '#71717a' },
         },
       },
       scales: {
         x: {
-          grid: { color: '#374151' },
-          ticks: { color: '#9CA3AF' },
+          grid: { color: 'rgba(255,255,255,0.06)' },
+          ticks: { color: '#71717a' },
         },
         y: {
           beginAtZero: true,
-          grid: { color: '#374151' },
-          ticks: { color: '#9CA3AF' },
+          grid: { color: 'rgba(255,255,255,0.06)' },
+          ticks: { color: '#71717a' },
         },
       },
       interaction: {

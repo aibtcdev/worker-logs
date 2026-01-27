@@ -3,7 +3,7 @@
  */
 
 export const styles = {
-  // Log level colors
+  // Log level colors (semantic - not brand colors)
   logColors: {
     DEBUG: '#9CA3AF',
     INFO: '#60A5FA',

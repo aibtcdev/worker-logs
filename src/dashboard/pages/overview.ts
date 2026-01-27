@@ -33,8 +33,8 @@ export function overviewPage(data: OverviewResponse, apps: string[]): string {
     </div>
 
     <!-- App Health Table -->
-    <div class="bg-gray-800 rounded-lg border border-gray-700 mb-6 overflow-hidden">
-      <div class="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
+    <div class="brand-card rounded-lg mb-6 overflow-hidden">
+      <div class="px-4 py-3 flex items-center justify-between" style="border-bottom: 1px solid var(--border);">
         <h2 class="font-medium">App Health Summary</h2>
         <button @click="refreshData()" class="text-sm text-gray-400 hover:text-gray-200 flex items-center gap-1">
           <svg class="w-4 h-4" :class="{ 'animate-spin': loading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,8 +97,8 @@ export function overviewPage(data: OverviewResponse, apps: string[]): string {
     </div>
 
     <!-- Recent Errors -->
-    <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-      <div class="px-4 py-3 border-b border-gray-700">
+    <div class="brand-card rounded-lg overflow-hidden">
+      <div class="px-4 py-3" style="border-bottom: 1px solid var(--border);">
         <h2 class="font-medium">Recent Errors (All Apps)</h2>
       </div>
       ${recent_errors.length > 0 ? `
@@ -143,12 +143,12 @@ export function overviewPage(data: OverviewResponse, apps: string[]): string {
 
     <!-- Error Detail Modal -->
     <div x-show="selectedError" x-cloak
-         class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+         class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"
          @click.self="selectedError = null">
-      <div class="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden" @click.stop>
-        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-700">
+      <div class="rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden" style="background: var(--bg-card); border: 1px solid var(--border);" @click.stop>
+        <div class="flex items-center justify-between px-4 py-3" style="border-bottom: 1px solid var(--border);">
           <h3 class="font-medium">Error Details</h3>
-          <button @click="selectedError = null" class="text-gray-400 hover:text-gray-200">&times;</button>
+          <button @click="selectedError = null" class="icon-button text-gray-400 hover:text-gray-200">&times;</button>
         </div>
         <div class="p-4 overflow-auto max-h-[calc(80vh-60px)]">
           <pre class="text-sm whitespace-pre-wrap text-gray-300" x-text="JSON.stringify(selectedError, null, 2)"></pre>
