@@ -29,10 +29,16 @@ const brandCss = `
   }
   :root {
     --accent: #FF4F03;
+    --accent-hover: #e54400;
     --accent-dim: rgba(255, 79, 3, 0.12);
     --bg-primary: #000;
     --bg-card: #0a0a0a;
+    --bg-table-header: #111111;
     --bg-hover: #18181b;
+    --bg-input: #1a1a1a;
+    --bg-input-hover: #222222;
+    --bg-active-subtle: #252525;
+    --bg-active: #2a2a2a;
     --border: rgba(255,255,255,0.06);
     --border-hover: rgba(255,255,255,0.1);
     --text-primary: #fafafa;
@@ -60,24 +66,31 @@ const brandCss = `
   /* Override Tailwind gray-900/800/700 with brand dark palette */
   .bg-gray-900, .bg-gray-800 { background-color: var(--bg-card) !important; }
   .border-gray-700 { border-color: var(--border) !important; }
-  .bg-gray-750 { background-color: #111111 !important; }
+  .bg-gray-750 { background-color: var(--bg-table-header) !important; }
   .hover\\:bg-gray-750:hover { background-color: var(--bg-hover) !important; }
-  .bg-gray-700 { background-color: #1a1a1a !important; }
+  .bg-gray-700 { background-color: var(--bg-input) !important; }
   .hover\\:bg-gray-700\\/50:hover { background-color: rgba(26,26,26,0.5) !important; }
-  .hover\\:bg-gray-700:hover { background-color: #222 !important; }
-  .hover\\:bg-gray-600:hover { background-color: #2a2a2a !important; }
-  .bg-gray-600 { background-color: #252525 !important; }
-  /* Brand accent overrides: links only (not log-level indicators) */
-  a.text-blue-400 { color: var(--accent) !important; }
-  a.text-blue-400:hover, a.hover\\:text-blue-300:hover { color: #ff7033 !important; }
+  .hover\\:bg-gray-700:hover { background-color: var(--bg-input-hover) !important; }
+  .hover\\:bg-gray-600:hover { background-color: var(--bg-active) !important; }
+  .bg-gray-600 { background-color: var(--bg-active-subtle) !important; }
+  /* Brand accent overrides: all .text-blue-400 except log-level indicators */
+  .text-blue-400:not(.log-level) { color: var(--accent) !important; }
+  .text-blue-400:not(.log-level):hover, .hover\\:text-blue-300:not(.log-level):hover { color: #ff7033 !important; }
   .bg-blue-600 { background-color: var(--accent) !important; }
-  .hover\\:bg-blue-700:hover { background-color: #e54400 !important; }
+  .hover\\:bg-blue-700:hover { background-color: var(--accent-hover) !important; }
   .focus\\:border-blue-500:focus { border-color: var(--accent) !important; }
   /* Focus ring styling */
-  input:focus, select:focus, button:focus-visible {
+  input:focus-visible, select:focus-visible, button:focus-visible:not(.log-level):not(.icon-button) {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
   }
+  .log-level:focus-visible, .icon-button:focus-visible {
+    outline: auto;
+    outline-offset: 0;
+  }
+  /* Login button hover */
+  .btn-accent { background: var(--accent); color: white; }
+  .btn-accent:hover { background: var(--accent-hover); }
   /* Brand card effects */
   .brand-card {
     position: relative;
@@ -114,8 +127,14 @@ const brandCss = `
     opacity: 0;
     transition: opacity 0.4s ease;
     pointer-events: none;
+    z-index: 0;
   }
   .card-glow:hover::after { opacity: 1; }
+  /* Ensure card content is above glow */
+  .brand-card > * {
+    position: relative;
+    z-index: 1;
+  }
   /* Header brand styling */
   .brand-header {
     background: rgba(10,10,10,0.8);
@@ -130,13 +149,16 @@ const brandCss = `
  * Card glow mouse tracking script
  */
 const cardGlowScript = `
-  document.querySelectorAll('.card-glow').forEach(function(card) {
-    card.addEventListener('mousemove', function(e) {
+  (function() {
+    document.addEventListener('mousemove', function(e) {
+      if (!e.target || !e.target.closest) return;
+      var card = e.target.closest('.card-glow');
+      if (!card) return;
       var rect = card.getBoundingClientRect();
       card.style.setProperty('--mouse-x', ((e.clientX - rect.left) / rect.width * 100) + '%');
       card.style.setProperty('--mouse-y', ((e.clientY - rect.top) / rect.height * 100) + '%');
     });
-  });
+  })();
 `
 
 /**
@@ -198,7 +220,7 @@ export function header(options: LayoutOptions = {}): string {
               </svg>
             </button>
             <div x-show="open" @click.away="open = false" x-cloak
-                 class="absolute top-full left-0 mt-1 rounded shadow-lg py-1 min-w-[160px] z-50" style="background: #111; border: 1px solid var(--border);">
+                 class="absolute top-full left-0 mt-1 rounded shadow-lg py-1 min-w-[160px] z-50" style="background: var(--bg-card); border: 1px solid var(--border);">
               ${apps.map(app => `
                 <a href="/dashboard/app/${app}"
                    class="block px-3 py-1.5 text-sm hover:bg-gray-700 ${app === currentApp ? 'text-blue-400' : 'text-gray-300'}">
@@ -222,7 +244,7 @@ export function statsCard(label: string, value: number | string, colorClass: str
   return `
   <div class="brand-card card-glow rounded-lg p-4">
     <div class="text-sm mb-1" style="color: var(--text-muted);">${label}</div>
-    <div class="text-2xl font-bold ${colorClass}" style="position: relative; z-index: 1;">${value}</div>
+    <div class="text-2xl font-bold ${colorClass}">${value}</div>
   </div>`
 }
 

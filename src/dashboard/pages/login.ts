@@ -30,10 +30,7 @@ export function loginPage(error?: string): string {
         />
         <button
           type="submit"
-          class="w-full mt-4 px-4 py-2 rounded font-medium transition-colors"
-          style="background: var(--accent); color: white;"
-          onmouseover="this.style.background='#e54400'"
-          onmouseout="this.style.background='var(--accent)'"
+          class="w-full mt-4 px-4 py-2 rounded font-medium transition-colors btn-accent"
         >
           Login
         </button>

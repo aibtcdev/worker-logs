@@ -148,7 +148,7 @@ export function overviewPage(data: OverviewResponse, apps: string[]): string {
       <div class="rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden" style="background: var(--bg-card); border: 1px solid var(--border);" @click.stop>
         <div class="flex items-center justify-between px-4 py-3" style="border-bottom: 1px solid var(--border);">
           <h3 class="font-medium">Error Details</h3>
-          <button @click="selectedError = null" class="text-gray-400 hover:text-gray-200">&times;</button>
+          <button @click="selectedError = null" class="icon-button text-gray-400 hover:text-gray-200">&times;</button>
         </div>
         <div class="p-4 overflow-auto max-h-[calc(80vh-60px)]">
           <pre class="text-sm whitespace-pre-wrap text-gray-300" x-text="JSON.stringify(selectedError, null, 2)"></pre>

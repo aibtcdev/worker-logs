@@ -140,11 +140,11 @@ export function appDetailPage(data: AppDetailData, apps: string[]): string {
         <div class="flex flex-col gap-1">
           <label class="text-xs text-gray-400">Level</label>
           <div class="flex gap-1">
-            <button @click="setLevel('')" :class="filters.level === '' ? 'bg-gray-600' : 'bg-gray-700 hover:bg-gray-600'" class="px-3 py-1.5 text-sm rounded">All</button>
-            <button @click="setLevel('DEBUG')" :class="filters.level === 'DEBUG' ? 'bg-gray-600' : 'bg-gray-700 hover:bg-gray-600'" class="px-3 py-1.5 text-sm rounded text-gray-400">Debug</button>
-            <button @click="setLevel('INFO')" :class="filters.level === 'INFO' ? 'bg-gray-600' : 'bg-gray-700 hover:bg-gray-600'" class="px-3 py-1.5 text-sm rounded text-blue-400">Info</button>
-            <button @click="setLevel('WARN')" :class="filters.level === 'WARN' ? 'bg-gray-600' : 'bg-gray-700 hover:bg-gray-600'" class="px-3 py-1.5 text-sm rounded text-yellow-400">Warn</button>
-            <button @click="setLevel('ERROR')" :class="filters.level === 'ERROR' ? 'bg-gray-600' : 'bg-gray-700 hover:bg-gray-600'" class="px-3 py-1.5 text-sm rounded text-red-400">Error</button>
+            <button @click="setLevel('')" :class="filters.level === '' ? 'bg-gray-600' : 'bg-gray-700 hover:bg-gray-600'" class="log-level px-3 py-1.5 text-sm rounded">All</button>
+            <button @click="setLevel('DEBUG')" :class="filters.level === 'DEBUG' ? 'bg-gray-600' : 'bg-gray-700 hover:bg-gray-600'" class="log-level px-3 py-1.5 text-sm rounded text-gray-400">Debug</button>
+            <button @click="setLevel('INFO')" :class="filters.level === 'INFO' ? 'bg-gray-600' : 'bg-gray-700 hover:bg-gray-600'" class="log-level px-3 py-1.5 text-sm rounded text-blue-400">Info</button>
+            <button @click="setLevel('WARN')" :class="filters.level === 'WARN' ? 'bg-gray-600' : 'bg-gray-700 hover:bg-gray-600'" class="log-level px-3 py-1.5 text-sm rounded text-yellow-400">Warn</button>
+            <button @click="setLevel('ERROR')" :class="filters.level === 'ERROR' ? 'bg-gray-600' : 'bg-gray-700 hover:bg-gray-600'" class="log-level px-3 py-1.5 text-sm rounded text-red-400">Error</button>
           </div>
         </div>
 
@@ -257,7 +257,7 @@ export function appDetailPage(data: AppDetailData, apps: string[]): string {
       <div class="rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden" style="background: var(--bg-card); border: 1px solid var(--border);" @click.stop>
         <div class="flex items-center justify-between px-4 py-3" style="border-bottom: 1px solid var(--border);">
           <h3 class="font-medium">Log Details</h3>
-          <button @click="selectedLog = null" class="text-gray-400 hover:text-gray-200">&times;</button>
+          <button @click="selectedLog = null" class="icon-button text-gray-400 hover:text-gray-200">&times;</button>
         </div>
         <div class="p-4 overflow-auto max-h-[calc(80vh-60px)]">
           <pre class="text-sm whitespace-pre-wrap text-gray-300" x-text="JSON.stringify(selectedLog, null, 2)"></pre>

@@ -3,16 +3,6 @@
  */
 
 export const styles = {
-  // Brand colors
-  brand: {
-    orange: '#FF4F03',
-    orangeDim: 'rgba(255, 79, 3, 0.12)',
-    orangeGlow: 'rgba(255, 79, 3, 0.08)',
-    orangeBorder: 'rgba(255, 79, 3, 0.3)',
-    blue: '#0634D0',
-    purple: '#A855F7',
-  },
-
   // Log level colors (semantic - not brand colors)
   logColors: {
     DEBUG: '#9CA3AF',
