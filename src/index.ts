@@ -165,12 +165,13 @@ app.post('/apps/:app_id/prune', requireApiKey, async (c) => {
   return c.json(await res.json())
 })
 
-// POST /apps/:app_id/health-urls - Set health check URLs (requires API key)
-app.post('/apps/:app_id/health-urls', requireApiKey, async (c) => {
+// POST /apps/:app_id/health-urls - Set health check URLs (requires API key or admin)
+app.post('/apps/:app_id/health-urls', requireApiKeyOrAdmin, async (c) => {
   const appId = c.req.param('app_id')
   const authenticatedAppId = c.get('appId')
 
-  if (appId !== authenticatedAppId) {
+  // If using API key auth, must match the requested app
+  if (authenticatedAppId && appId !== authenticatedAppId) {
     return c.json(Err({ code: ErrorCode.UNAUTHORIZED, message: 'App ID mismatch' }), 403)
   }
 
