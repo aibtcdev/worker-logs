@@ -9,7 +9,8 @@ Centralized logging service for Cloudflare Workers using SQLite-backed Durable O
 
 - **Hono.js** - HTTP routing framework
 - **Durable Objects (DO)** - Per-app isolated SQLite storage for logs and stats
-- **KV Namespace** - App registry (app_id -> metadata + hashed API key)
+- **KV Namespace** - App registry (app_id -> metadata + plaintext API key)
+  Note: API keys are stored in plaintext in KV. TODO: implement key hashing before storing.
 - **RPC Entrypoint** - `LogsRPC` for service bindings between workers
 
 ## Key Files
@@ -41,7 +42,8 @@ Tests use `@cloudflare/vitest-pool-workers` with `isolatedStorage: false` (requi
 
 | Endpoint | Auth Required |
 |----------|---------------|
-| `POST /logs`, `GET /logs` | API Key |
+| `POST /logs` | API Key |
+| `GET /logs` | API Key OR Admin Key (with `X-App-ID`) |
 | `POST /apps/:id/prune`, `POST /apps/:id/health-urls` | API Key (matching app) |
 | `DELETE /apps/:id` | API Key (matching app) OR Admin Key |
 | `GET /apps` | Admin Key |
@@ -109,8 +111,18 @@ value TEXT NOT NULL   -- JSON (e.g., health_urls array)
 ```
 
 ### KV Registry
-- Key: `app:{app_id}` -> `{ name, api_key_hash, created_at, updated_at }`
+- Key: `app:{app_id}` -> `{ name, api_key, created_at, health_urls }` (see `AppConfig` in `src/types.ts`)
 - Key: `apps` -> `string[]` (list of app IDs)
+
+### LogsRPC Copy-Paste Pattern
+
+Consuming repos (landing-page, x402-api, x402-sponsor-relay) copy-paste the `LogsRPC` type definition
+rather than importing it from a shared package. This is because worker service bindings require the
+type to be available at compile time in each consumer, and there is no published npm package for
+worker-logs types.
+
+This is a known pattern. A future improvement would be to extract `LogsRPC` and related types into a
+shared `@aibtc/worker-logs` npm package so consumers import instead of copy-paste.
 
 ## Fork Maintenance
 
