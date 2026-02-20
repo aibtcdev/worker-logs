@@ -110,6 +110,14 @@ export interface DailyStats {
 }
 
 /**
+ * Result of a log query including pagination metadata
+ */
+export interface LogQueryResult {
+  logs: LogEntry[]
+  totalCount: number
+}
+
+/**
  * Prune request
  */
 export interface PruneRequest {

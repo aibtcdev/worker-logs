@@ -375,7 +375,7 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
             const res = await fetch('/dashboard/api/logs/' + APP_ID + '?' + query);
             const data = await res.json();
             if (data.ok && data.data) {
-              this.logs = data.data;
+              this.logs = data.data.logs ?? data.data;
             }
           } catch (err) {
             console.error('Failed to load logs:', err);

@@ -77,28 +77,31 @@ describe('AppLogsDO', () => {
 
       // Query all
       const allResponse = await stub.fetch(new Request('http://do/logs', { method: 'GET' }))
-      const allData = (await allResponse.json()) as { ok: boolean; data: Array<{ message: string }> }
+      const allData = (await allResponse.json()) as { ok: boolean; data: { logs: Array<{ message: string }>; totalCount: number } }
       expect(allData.ok).toBe(true)
-      expect(allData.data.length).toBe(3)
+      expect(allData.data.logs.length).toBe(3)
+      expect(allData.data.totalCount).toBe(3)
 
       // Query by level
       const errorResponse = await stub.fetch(new Request('http://do/logs?level=ERROR', { method: 'GET' }))
-      const errorData = (await errorResponse.json()) as { ok: boolean; data: Array<{ level: string }> }
+      const errorData = (await errorResponse.json()) as { ok: boolean; data: { logs: Array<{ level: string }>; totalCount: number } }
       expect(errorData.ok).toBe(true)
-      expect(errorData.data.length).toBe(1)
-      expect(errorData.data[0].level).toBe('ERROR')
+      expect(errorData.data.logs.length).toBe(1)
+      expect(errorData.data.totalCount).toBe(1)
+      expect(errorData.data.logs[0].level).toBe('ERROR')
 
       // Query by request_id
       const reqResponse = await stub.fetch(new Request('http://do/logs?request_id=req-abc', { method: 'GET' }))
-      const reqData = (await reqResponse.json()) as { ok: boolean; data: Array<{ request_id: string }> }
+      const reqData = (await reqResponse.json()) as { ok: boolean; data: { logs: Array<{ request_id: string }>; totalCount: number } }
       expect(reqData.ok).toBe(true)
-      expect(reqData.data.length).toBe(1)
-      expect(reqData.data[0].request_id).toBe('req-abc')
+      expect(reqData.data.logs.length).toBe(1)
+      expect(reqData.data.logs[0].request_id).toBe('req-abc')
 
-      // Query with limit
+      // Query with limit returns limited results but totalCount reflects full match count
       const limitResponse = await stub.fetch(new Request('http://do/logs?limit=2', { method: 'GET' }))
-      const limitData = (await limitResponse.json()) as { data: Array<{ id: string }> }
-      expect(limitData.data).toHaveLength(2)
+      const limitData = (await limitResponse.json()) as { data: { logs: Array<{ id: string }>; totalCount: number } }
+      expect(limitData.data.logs).toHaveLength(2)
+      expect(limitData.data.totalCount).toBe(3)
     })
   })
 

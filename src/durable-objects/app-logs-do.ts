@@ -5,6 +5,7 @@ import type {
   LogLevel,
   LogEntry,
   LogInput,
+  LogQueryResult,
   QueryFilters,
   HealthCheck,
   PruneResult,
@@ -146,36 +147,37 @@ export class AppLogsDO extends DurableObject<Env> {
 
   /**
    * Query logs with filters
+   * Returns paginated log entries with totalCount for full result size
    */
-  async query(filters: QueryFilters = {}): Promise<Result<LogEntry[]>> {
+  async query(filters: QueryFilters = {}): Promise<Result<LogQueryResult>> {
     try {
       const conditions: string[] = []
-      const params: unknown[] = []
+      const filterParams: unknown[] = []
 
       if (filters.level) {
         conditions.push('level = ?')
-        params.push(filters.level)
+        filterParams.push(filters.level)
       }
 
       if (filters.since) {
         conditions.push('timestamp >= ?')
-        params.push(filters.since)
+        filterParams.push(filters.since)
       }
 
       if (filters.until) {
         conditions.push('timestamp <= ?')
-        params.push(filters.until)
+        filterParams.push(filters.until)
       }
 
       if (filters.request_id) {
         conditions.push('request_id = ?')
-        params.push(filters.request_id)
+        filterParams.push(filters.request_id)
       }
 
       // Full-text search in message
       if (filters.search) {
         conditions.push('message LIKE ?')
-        params.push(`%${filters.search}%`)
+        filterParams.push(`%${filters.search}%`)
       }
 
       // Context field filters (e.g., path, status)
@@ -183,7 +185,7 @@ export class AppLogsDO extends DurableObject<Env> {
         for (const [key, value] of Object.entries(filters.context)) {
           // Use json_extract for SQLite JSON querying
           conditions.push(`json_extract(context, '$.${key}') = ?`)
-          params.push(value)
+          filterParams.push(value)
         }
       }
 
@@ -191,6 +193,16 @@ export class AppLogsDO extends DurableObject<Env> {
       const limit = filters.limit ?? 100
       const offset = filters.offset ?? 0
 
+      // Get total count matching filters (without pagination)
+      const countCursor = this.sql.exec(
+        `SELECT COUNT(*) as total FROM logs ${whereClause}`,
+        ...filterParams
+      )
+      const countRow = countCursor.one()
+      const totalCount = (countRow?.total as number) ?? 0
+
+      // Get paginated results
+      const dataParams = [...filterParams, limit, offset]
       const query = `
         SELECT id, timestamp, level, message, context, request_id
         FROM logs
@@ -198,12 +210,11 @@ export class AppLogsDO extends DurableObject<Env> {
         ORDER BY timestamp DESC
         LIMIT ? OFFSET ?
       `
-      params.push(limit, offset)
 
-      const cursor = this.sql.exec(query, ...params)
+      const cursor = this.sql.exec(query, ...dataParams)
       const rows = cursor.toArray()
 
-      const entries: LogEntry[] = rows.map((row) => ({
+      const logs: LogEntry[] = rows.map((row) => ({
         id: row.id as string,
         timestamp: row.timestamp as string,
         level: row.level as LogLevel,
@@ -212,7 +223,7 @@ export class AppLogsDO extends DurableObject<Env> {
         request_id: row.request_id as string | undefined,
       }))
 
-      return Ok(entries)
+      return Ok({ logs, totalCount })
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Unknown error'
       return Err({ code: ErrorCode.INTERNAL_ERROR, message })

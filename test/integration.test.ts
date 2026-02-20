@@ -185,9 +185,10 @@ describe('HTTP API Integration', () => {
       })
       expect(response.status).toBe(200)
 
-      const data = (await response.json()) as { ok: boolean; data: Array<{ message: string }> }
+      const data = (await response.json()) as { ok: boolean; data: { logs: Array<{ message: string }>; totalCount: number } }
       expect(data.ok).toBe(true)
-      expect(data.data.length).toBeGreaterThanOrEqual(1)
+      expect(data.data.logs.length).toBeGreaterThanOrEqual(1)
+      expect(data.data.totalCount).toBeGreaterThanOrEqual(1)
     })
 
     it('GET /logs filters by level', async () => {
@@ -211,9 +212,9 @@ describe('HTTP API Integration', () => {
       })
       expect(response.status).toBe(200)
 
-      const data = (await response.json()) as { ok: boolean; data: Array<{ level: string }> }
+      const data = (await response.json()) as { ok: boolean; data: { logs: Array<{ level: string }>; totalCount: number } }
       expect(data.ok).toBe(true)
-      expect(data.data.every((log) => log.level === 'ERROR')).toBe(true)
+      expect(data.data.logs.every((log) => log.level === 'ERROR')).toBe(true)
     })
   })
 

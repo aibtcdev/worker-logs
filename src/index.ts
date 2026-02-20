@@ -14,7 +14,7 @@ export { AppLogsDO } from './durable-objects/app-logs-do'
 export { LogsRPC } from './rpc'
 
 // Re-export types for consumers
-export type { LogInput, LogEntry, LogLevel, QueryFilters, DailyStats } from './types'
+export type { LogInput, LogEntry, LogLevel, LogQueryResult, QueryFilters, DailyStats } from './types'
 
 type Variables = {
   appId: string
@@ -98,9 +98,15 @@ app.post('/logs', requireApiKey, async (c) => {
   }
 })
 
-// GET /logs - Query logs (requires API key)
-app.get('/logs', requireApiKey, async (c) => {
-  const appId = c.get('appId')
+// GET /logs - Query logs (requires API key OR admin key with X-App-ID)
+app.get('/logs', requireApiKeyOrAdmin, async (c) => {
+  // API key auth sets appId via middleware; admin auth requires explicit X-App-ID header
+  const appId = c.get('appId') ?? c.req.header('X-App-ID')
+
+  if (!appId) {
+    return c.json(Err({ code: ErrorCode.BAD_REQUEST, message: 'X-App-ID header required' }), 400)
+  }
+
   const stub = getAppDO(c.env, appId)
   const url = new URL(c.req.url)
 

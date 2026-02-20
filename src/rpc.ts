@@ -6,7 +6,7 @@
  */
 
 import { WorkerEntrypoint } from 'cloudflare:workers'
-import type { Env, LogInput, LogEntry, QueryFilters, DailyStats } from './types'
+import type { Env, LogInput, LogEntry, LogQueryResult, QueryFilters, DailyStats } from './types'
 import { getAppDO, countByLevel } from './utils'
 
 /**
@@ -81,8 +81,9 @@ export class LogsRPC extends WorkerEntrypoint<Env> {
 
   /**
    * Query logs with optional filters
+   * Returns paginated logs with totalCount for full result size
    */
-  async query(appId: string, filters?: QueryFilters): Promise<LogEntry[]> {
+  async query(appId: string, filters?: QueryFilters): Promise<LogQueryResult> {
     const stub = this.getStub(appId)
 
     const params = new URLSearchParams()
@@ -98,8 +99,8 @@ export class LogsRPC extends WorkerEntrypoint<Env> {
       method: 'GET',
     }))
 
-    const result = await res.json() as { ok: boolean; data: LogEntry[] }
-    return result.data
+    const result = await res.json() as { ok: boolean; data: LogQueryResult }
+    return result.ok ? result.data : { logs: [], totalCount: 0 }
   }
 
   /**
