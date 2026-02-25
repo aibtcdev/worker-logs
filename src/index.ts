@@ -160,7 +160,7 @@ app.get('/logs', requireApiKeyOrAdmin, async (c) => {
   )
 
   const merged = results.flat()
-  merged.sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+  merged.sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1))
   const truncated = merged.slice(0, globalLimit)
 
   return c.json(Ok(truncated))
