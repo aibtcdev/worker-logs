@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/aibtcdev/worker-logs/compare/v1.0.0...v1.1.0) (2026-02-25)
+
+
+### Features
+
+* **logs:** add admin aggregated logs endpoint ([#12](https://github.com/aibtcdev/worker-logs/issues/12)) ([85be3d2](https://github.com/aibtcdev/worker-logs/commit/85be3d2cc53cb8319fe4bf893f5c4a8ac852766a))
+
 ## 1.0.0 (2026-01-27)
 
 
