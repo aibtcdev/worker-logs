@@ -583,5 +583,190 @@ describe('HTTP API Integration', () => {
       // Single-app path returns raw DO response -- no app_id field
       expect(data.data.every((e) => e.app_id === undefined)).toBe(true)
     })
+
+    it('GET /logs with no auth and no X-App-ID returns 400', async () => {
+      const response = await SELF.fetch('https://example.com/logs', {
+        method: 'GET',
+      })
+      // requireApiKeyOrAdmin: missing both X-Admin-Key and X-App-ID returns 400
+      expect(response.status).toBe(400)
+    })
+
+    it('GET /logs with invalid admin key and no X-App-ID returns 401', async () => {
+      const response = await SELF.fetch('https://example.com/logs', {
+        method: 'GET',
+        headers: {
+          'X-Admin-Key': 'invalid-key',
+        },
+      })
+      expect(response.status).toBe(401)
+    })
+
+    describe('aggregated filter scenarios', () => {
+      const FILTER_APP_1 = 'filter-app-1'
+      const FILTER_APP_2 = 'filter-app-2'
+      let filterApiKey1: string
+      let filterApiKey2: string
+
+      beforeAll(async () => {
+        // Create filter-app-1
+        const create1 = await SELF.fetch('https://example.com/apps', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Key': env.ADMIN_API_KEY,
+          },
+          body: JSON.stringify({ app_id: FILTER_APP_1, name: 'Filter App 1' }),
+        })
+        const data1 = (await create1.json()) as { data: { api_key: string } }
+        filterApiKey1 = data1.data.api_key
+
+        // Create filter-app-2
+        const create2 = await SELF.fetch('https://example.com/apps', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Key': env.ADMIN_API_KEY,
+          },
+          body: JSON.stringify({ app_id: FILTER_APP_2, name: 'Filter App 2' }),
+        })
+        const data2 = (await create2.json()) as { data: { api_key: string } }
+        filterApiKey2 = data2.data.api_key
+
+        // Write targeted logs to filter-app-1
+        await SELF.fetch('https://example.com/logs', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-App-ID': FILTER_APP_1,
+            'X-Api-Key': filterApiKey1,
+          },
+          body: JSON.stringify({
+            logs: [
+              {
+                level: 'ERROR',
+                message: 'database connection failed',
+                context: { service: 'db', env: 'prod' },
+                request_id: 'req-abc-123',
+              },
+              {
+                level: 'INFO',
+                message: 'user login success',
+                context: { service: 'auth' },
+              },
+            ],
+          }),
+        })
+
+        // Write targeted logs to filter-app-2
+        await SELF.fetch('https://example.com/logs', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-App-ID': FILTER_APP_2,
+            'X-Api-Key': filterApiKey2,
+          },
+          body: JSON.stringify({
+            logs: [
+              {
+                level: 'WARN',
+                message: 'database slow query detected',
+                context: { service: 'db', env: 'staging' },
+              },
+              {
+                level: 'DEBUG',
+                message: 'heartbeat ping',
+              },
+            ],
+          }),
+        })
+      })
+
+      it('GET /logs with since=far-future returns empty array in aggregated mode', async () => {
+        const response = await SELF.fetch('https://example.com/logs?since=2099-01-01T00:00:00.000Z', {
+          method: 'GET',
+          headers: {
+            'X-Admin-Key': env.ADMIN_API_KEY,
+          },
+        })
+        expect(response.status).toBe(200)
+
+        const data = (await response.json()) as { ok: boolean; data: Array<unknown> }
+        expect(data.ok).toBe(true)
+        expect(data.data).toHaveLength(0)
+      })
+
+      it('GET /logs with until=far-past returns empty array in aggregated mode', async () => {
+        const response = await SELF.fetch('https://example.com/logs?until=2000-01-01T00:00:00.000Z', {
+          method: 'GET',
+          headers: {
+            'X-Admin-Key': env.ADMIN_API_KEY,
+          },
+        })
+        expect(response.status).toBe(200)
+
+        const data = (await response.json()) as { ok: boolean; data: Array<unknown> }
+        expect(data.ok).toBe(true)
+        expect(data.data).toHaveLength(0)
+      })
+
+      it('GET /logs with search filter returns matching entries across apps', async () => {
+        const response = await SELF.fetch('https://example.com/logs?search=database', {
+          method: 'GET',
+          headers: {
+            'X-Admin-Key': env.ADMIN_API_KEY,
+          },
+        })
+        expect(response.status).toBe(200)
+
+        const data = (await response.json()) as { ok: boolean; data: Array<{ message: string; app_id: string }> }
+        expect(data.ok).toBe(true)
+        // Both apps have logs with "database" in the message
+        const messages = data.data.map((e) => e.message)
+        expect(messages.some((m) => m.includes('database connection failed'))).toBe(true)
+        expect(messages.some((m) => m.includes('database slow query detected'))).toBe(true)
+        // Every entry must have app_id
+        expect(data.data.every((e) => typeof e.app_id === 'string')).toBe(true)
+      })
+
+      it('GET /logs with context.* filter returns matching entries across apps', async () => {
+        const response = await SELF.fetch('https://example.com/logs?context.service=db', {
+          method: 'GET',
+          headers: {
+            'X-Admin-Key': env.ADMIN_API_KEY,
+          },
+        })
+        expect(response.status).toBe(200)
+
+        const data = (await response.json()) as { ok: boolean; data: Array<{ app_id: string; message: string }> }
+        expect(data.ok).toBe(true)
+        expect(data.data.length).toBeGreaterThanOrEqual(2)
+        // Should include entries from both filter apps with service=db
+        const app1Entries = data.data.filter((e) => e.app_id === FILTER_APP_1)
+        const app2Entries = data.data.filter((e) => e.app_id === FILTER_APP_2)
+        expect(app1Entries.length).toBeGreaterThanOrEqual(1)
+        expect(app2Entries.length).toBeGreaterThanOrEqual(1)
+        // Every entry must have app_id
+        expect(data.data.every((e) => typeof e.app_id === 'string')).toBe(true)
+      })
+
+      it('GET /logs with request_id filter returns matching entry across apps', async () => {
+        const response = await SELF.fetch('https://example.com/logs?request_id=req-abc-123', {
+          method: 'GET',
+          headers: {
+            'X-Admin-Key': env.ADMIN_API_KEY,
+          },
+        })
+        expect(response.status).toBe(200)
+
+        const data = (await response.json()) as { ok: boolean; data: Array<{ app_id: string; message: string; request_id?: string }> }
+        expect(data.ok).toBe(true)
+        // Only one log has this request_id
+        expect(data.data.length).toBe(1)
+        expect(data.data[0].message).toBe('database connection failed')
+        expect(data.data[0].app_id).toBe(FILTER_APP_1)
+        expect(data.data[0].request_id).toBe('req-abc-123')
+      })
+    })
   })
 })
