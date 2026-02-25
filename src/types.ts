@@ -110,6 +110,13 @@ export interface DailyStats {
 }
 
 /**
+ * A log entry with an app_id field, returned by admin aggregated queries
+ */
+export interface AggregatedLogEntry extends LogEntry {
+  app_id: string
+}
+
+/**
  * Prune request
  */
 export interface PruneRequest {
