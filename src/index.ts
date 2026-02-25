@@ -133,16 +133,14 @@ app.get('/logs', requireApiKeyOrAdmin, async (c) => {
   }
 
   const url = new URL(c.req.url)
-  const globalLimit = url.searchParams.has('limit')
-    ? parseInt(url.searchParams.get('limit')!, 10)
-    : 100
+  const globalLimit = Number(url.searchParams.get('limit')) || 100
   const perAppLimit = Math.max(10, Math.ceil(globalLimit / appIds.length))
 
   // Build per-app query string with overridden limit; offset is omitted (not meaningful in aggregated mode)
   const perAppParams = new URLSearchParams(url.search)
   perAppParams.set('limit', String(perAppLimit))
   perAppParams.delete('offset')
-  const queryString = perAppParams.toString() ? `?${perAppParams.toString()}` : ''
+  const queryString = `?${perAppParams.toString()}`
 
   const results = await Promise.all(
     appIds.map(async (id) => {

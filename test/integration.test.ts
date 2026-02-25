@@ -605,11 +605,9 @@ describe('HTTP API Integration', () => {
     describe('aggregated filter scenarios', () => {
       const FILTER_APP_1 = 'filter-app-1'
       const FILTER_APP_2 = 'filter-app-2'
-      let filterApiKey1: string
-      let filterApiKey2: string
 
       beforeAll(async () => {
-        // Create filter-app-1
+        // Create both filter apps and capture their API keys for writing logs
         const create1 = await SELF.fetch('https://example.com/apps', {
           method: 'POST',
           headers: {
@@ -619,9 +617,7 @@ describe('HTTP API Integration', () => {
           body: JSON.stringify({ app_id: FILTER_APP_1, name: 'Filter App 1' }),
         })
         const data1 = (await create1.json()) as { data: { api_key: string } }
-        filterApiKey1 = data1.data.api_key
 
-        // Create filter-app-2
         const create2 = await SELF.fetch('https://example.com/apps', {
           method: 'POST',
           headers: {
@@ -631,7 +627,6 @@ describe('HTTP API Integration', () => {
           body: JSON.stringify({ app_id: FILTER_APP_2, name: 'Filter App 2' }),
         })
         const data2 = (await create2.json()) as { data: { api_key: string } }
-        filterApiKey2 = data2.data.api_key
 
         // Write targeted logs to filter-app-1
         await SELF.fetch('https://example.com/logs', {
@@ -639,7 +634,7 @@ describe('HTTP API Integration', () => {
           headers: {
             'Content-Type': 'application/json',
             'X-App-ID': FILTER_APP_1,
-            'X-Api-Key': filterApiKey1,
+            'X-Api-Key': data1.data.api_key,
           },
           body: JSON.stringify({
             logs: [
@@ -664,7 +659,7 @@ describe('HTTP API Integration', () => {
           headers: {
             'Content-Type': 'application/json',
             'X-App-ID': FILTER_APP_2,
-            'X-Api-Key': filterApiKey2,
+            'X-Api-Key': data2.data.api_key,
           },
           body: JSON.stringify({
             logs: [
