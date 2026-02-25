@@ -449,4 +449,139 @@ describe('HTTP API Integration', () => {
       expect(data.data.deleted).toBe(true)
     })
   })
+
+  describe('Admin aggregated logs', () => {
+    const APP_ID_1 = 'agg-app-1'
+    const APP_ID_2 = 'agg-app-2'
+    let apiKey1: string
+    let apiKey2: string
+
+    beforeAll(async () => {
+      // Create both apps
+      const create1 = await SELF.fetch('https://example.com/apps', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Key': env.ADMIN_API_KEY,
+        },
+        body: JSON.stringify({ app_id: APP_ID_1, name: 'Aggregated App 1' }),
+      })
+      const data1 = (await create1.json()) as { data: { api_key: string } }
+      apiKey1 = data1.data.api_key
+
+      const create2 = await SELF.fetch('https://example.com/apps', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Key': env.ADMIN_API_KEY,
+        },
+        body: JSON.stringify({ app_id: APP_ID_2, name: 'Aggregated App 2' }),
+      })
+      const data2 = (await create2.json()) as { data: { api_key: string } }
+      apiKey2 = data2.data.api_key
+
+      // Write logs to agg-app-1
+      await SELF.fetch('https://example.com/logs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-App-ID': APP_ID_1,
+          'X-Api-Key': apiKey1,
+        },
+        body: JSON.stringify({
+          logs: [
+            { level: 'INFO', message: 'App 1 info log' },
+            { level: 'ERROR', message: 'App 1 error log' },
+          ],
+        }),
+      })
+
+      // Write logs to agg-app-2
+      await SELF.fetch('https://example.com/logs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-App-ID': APP_ID_2,
+          'X-Api-Key': apiKey2,
+        },
+        body: JSON.stringify({
+          logs: [
+            { level: 'WARN', message: 'App 2 warn log' },
+            { level: 'INFO', message: 'App 2 info log' },
+          ],
+        }),
+      })
+    })
+
+    it('GET /logs with admin key and no X-App-ID returns aggregated logs', async () => {
+      const response = await SELF.fetch('https://example.com/logs', {
+        method: 'GET',
+        headers: {
+          'X-Admin-Key': env.ADMIN_API_KEY,
+        },
+      })
+      expect(response.status).toBe(200)
+
+      const data = (await response.json()) as { ok: boolean; data: Array<{ app_id: string; message: string }> }
+      expect(data.ok).toBe(true)
+      expect(Array.isArray(data.data)).toBe(true)
+
+      // Should have entries from both apps
+      const app1Entries = data.data.filter((e) => e.app_id === APP_ID_1)
+      const app2Entries = data.data.filter((e) => e.app_id === APP_ID_2)
+      expect(app1Entries.length).toBeGreaterThanOrEqual(1)
+      expect(app2Entries.length).toBeGreaterThanOrEqual(1)
+
+      // Every entry must have an app_id field
+      expect(data.data.every((e) => typeof e.app_id === 'string')).toBe(true)
+    })
+
+    it('GET /logs with admin key and no X-App-ID respects level filter', async () => {
+      const response = await SELF.fetch('https://example.com/logs?level=ERROR', {
+        method: 'GET',
+        headers: {
+          'X-Admin-Key': env.ADMIN_API_KEY,
+        },
+      })
+      expect(response.status).toBe(200)
+
+      const data = (await response.json()) as { ok: boolean; data: Array<{ level: string; app_id: string }> }
+      expect(data.ok).toBe(true)
+      // All returned entries should be ERROR level
+      expect(data.data.every((e) => e.level === 'ERROR')).toBe(true)
+      // Should have at least one (from agg-app-1)
+      expect(data.data.length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('GET /logs with admin key and no X-App-ID respects limit', async () => {
+      const response = await SELF.fetch('https://example.com/logs?limit=2', {
+        method: 'GET',
+        headers: {
+          'X-Admin-Key': env.ADMIN_API_KEY,
+        },
+      })
+      expect(response.status).toBe(200)
+
+      const data = (await response.json()) as { ok: boolean; data: Array<{ app_id: string }> }
+      expect(data.ok).toBe(true)
+      expect(data.data.length).toBeLessThanOrEqual(2)
+    })
+
+    it('GET /logs with admin key AND X-App-ID returns single-app logs (no app_id field)', async () => {
+      const response = await SELF.fetch('https://example.com/logs', {
+        method: 'GET',
+        headers: {
+          'X-Admin-Key': env.ADMIN_API_KEY,
+          'X-App-ID': APP_ID_1,
+        },
+      })
+      expect(response.status).toBe(200)
+
+      const data = (await response.json()) as { ok: boolean; data: Array<{ message: string; app_id?: string }> }
+      expect(data.ok).toBe(true)
+      expect(Array.isArray(data.data)).toBe(true)
+      // Single-app path returns raw DO response -- no app_id field
+      expect(data.data.every((e) => e.app_id === undefined)).toBe(true)
+    })
+  })
 })
