@@ -2,7 +2,7 @@
  * App detail page - single app view with advanced filtering
  */
 
-import { htmlDocument, header, statsCard } from '../components/layout'
+import { htmlDocument, header } from '../components/layout'
 import { splitDailyStatsChartConfigs, formatHealthStatus, determineHealthStatus } from '../components/charts'
 import { escapeHtml, styles } from '../styles'
 import type { DailyStats, LogEntry, HealthCheck } from '../../types'
@@ -20,7 +20,7 @@ export interface AppDetailData {
 export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandConfig = DEFAULT_BRAND_CONFIG): string {
   const { appId, appName, stats, healthChecks, healthUrls } = data
 
-  // Calculate totals for the period
+  // Calculate totals for the initial period
   const totals = stats.reduce((acc, day) => ({
     debug: acc.debug + day.debug,
     info: acc.info + day.info,
@@ -55,22 +55,55 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
       ${appName !== appId ? `<div class="text-sm text-gray-500">${escapeHtml(appId)}</div>` : ''}
     </div>
 
-    <!-- Stats Cards (7 day totals) -->
+    <!-- Stats Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      ${statsCard('Debug (7d)', totals.debug, 'text-gray-400')}
-      ${statsCard('Info (7d)', totals.info, 'text-blue-400')}
-      ${statsCard('Warn (7d)', totals.warn, 'text-yellow-400')}
-      ${statsCard('Error (7d)', totals.error, 'text-red-400')}
+      <div class="brand-card rounded-lg p-4">
+        <div class="text-xs text-gray-400 mb-1">Debug (<span x-text="statsRange + 'd'">7d</span>)</div>
+        <div class="text-2xl font-bold text-gray-400" x-text="statsTotals.debug">${totals.debug}</div>
+      </div>
+      <div class="brand-card rounded-lg p-4">
+        <div class="text-xs text-gray-400 mb-1">Info (<span x-text="statsRange + 'd'">7d</span>)</div>
+        <div class="text-2xl font-bold text-blue-400" x-text="statsTotals.info">${totals.info}</div>
+      </div>
+      <div class="brand-card rounded-lg p-4">
+        <div class="text-xs text-gray-400 mb-1">Warn (<span x-text="statsRange + 'd'">7d</span>)</div>
+        <div class="text-2xl font-bold text-yellow-400" x-text="statsTotals.warn">${totals.warn}</div>
+      </div>
+      <div class="brand-card rounded-lg p-4">
+        <div class="text-xs text-gray-400 mb-1">Error (<span x-text="statsRange + 'd'">7d</span>)</div>
+        <div class="text-2xl font-bold text-red-400" x-text="statsTotals.error">${totals.error}</div>
+      </div>
     </div>
 
     <!-- Stats Charts -->
     <div class="brand-card rounded-lg p-4 mb-6">
-      <h3 class="font-medium mb-2">Log Activity (7 days)</h3>
-      <div class="h-40 mb-4">
-        <canvas id="errorsWarningsChart"></canvas>
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-medium">Log Activity (<span x-text="statsRange + 'd'">7d</span>)</h3>
+        <div class="flex items-center gap-1">
+          <button @click="setStatsRange(7)"
+                  :class="statsRange === 7 ? 'bg-gray-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-400'"
+                  class="px-3 py-1 text-xs rounded transition-colors">7d</button>
+          <button @click="setStatsRange(14)"
+                  :class="statsRange === 14 ? 'bg-gray-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-400'"
+                  class="px-3 py-1 text-xs rounded transition-colors">14d</button>
+          <button @click="setStatsRange(30)"
+                  :class="statsRange === 30 ? 'bg-gray-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-400'"
+                  class="px-3 py-1 text-xs rounded transition-colors">30d</button>
+        </div>
       </div>
-      <div class="h-48">
-        <canvas id="trafficChart"></canvas>
+      <div x-show="statsLoading" class="flex justify-center py-4">
+        <svg class="animate-spin h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </div>
+      <div x-show="!statsLoading">
+        <div class="h-40 mb-4">
+          <canvas id="errorsWarningsChart"></canvas>
+        </div>
+        <div class="h-48">
+          <canvas id="trafficChart"></canvas>
+        </div>
       </div>
     </div>
 
@@ -275,6 +308,10 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
   <script>
     const APP_ID = '${appId}';
 
+    // Chart instances — set in DOMContentLoaded, updated by loadStats()
+    var ewChart = null;
+    var trafficChart = null;
+
     function appDetailState() {
       return {
         logs: [],
@@ -284,6 +321,9 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
         autoRefreshInterval: null,
         offset: 0,
         limit: 50,
+        statsRange: 7,
+        statsLoading: false,
+        statsTotals: { debug: ${totals.debug}, info: ${totals.info}, warn: ${totals.warn}, error: ${totals.error} },
         filters: {
           dateRange: '7d',
           since: '',
@@ -296,6 +336,54 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
 
         init() {
           this.loadLogs();
+        },
+
+        setStatsRange(days) {
+          this.statsRange = days;
+          this.loadStats();
+        },
+
+        async loadStats() {
+          this.statsLoading = true;
+          try {
+            const res = await fetch('/dashboard/api/stats/' + APP_ID + '?days=' + this.statsRange);
+            const data = await res.json();
+            if (data.ok && data.data) {
+              const stats = data.data.slice().reverse(); // oldest first
+              const labels = stats.map(s => s.date);
+              const errors = stats.map(s => s.error);
+              const warnings = stats.map(s => s.warn);
+              const info = stats.map(s => s.info);
+              const debug = stats.map(s => s.debug);
+
+              // Update totals
+              const totals = stats.reduce((acc, s) => ({
+                debug: acc.debug + s.debug,
+                info: acc.info + s.info,
+                warn: acc.warn + s.warn,
+                error: acc.error + s.error,
+              }), { debug: 0, info: 0, warn: 0, error: 0 });
+              this.statsTotals = totals;
+
+              // Update charts in-place
+              if (ewChart) {
+                ewChart.data.labels = labels;
+                ewChart.data.datasets[0].data = errors;
+                ewChart.data.datasets[1].data = warnings;
+                ewChart.update();
+              }
+              if (trafficChart) {
+                trafficChart.data.labels = labels;
+                trafficChart.data.datasets[0].data = info;
+                trafficChart.data.datasets[1].data = debug;
+                trafficChart.update();
+              }
+            }
+          } catch (err) {
+            console.error('Failed to load stats:', err);
+          } finally {
+            this.statsLoading = false;
+          }
         },
 
         setLevel(level) {
@@ -419,15 +507,15 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
       }
     }
 
-    // Initialize charts
+    // Initialize charts and store instances for later updates via loadStats()
     document.addEventListener('DOMContentLoaded', () => {
       const ewCtx = document.getElementById('errorsWarningsChart');
       if (ewCtx) {
-        new Chart(ewCtx, ${errorsWarningsConfig});
+        ewChart = new Chart(ewCtx, ${errorsWarningsConfig});
       }
       const trafficCtx = document.getElementById('trafficChart');
       if (trafficCtx) {
-        new Chart(trafficCtx, ${trafficConfig});
+        trafficChart = new Chart(trafficCtx, ${trafficConfig});
       }
     });
   </script>`
