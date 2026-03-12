@@ -127,6 +127,139 @@ export function dailyStatsChartConfig(
 }
 
 /**
+ * Generate two Chart.js configurations for split daily stats display:
+ * - errorsWarningsConfig: errors + warnings on their own small y-axis (top chart)
+ * - trafficConfig: info + debug traffic volume (bottom chart)
+ * Both share the same x-axis labels for visual correlation.
+ */
+export function splitDailyStatsChartConfigs(
+  labels: string[],
+  data: { errors: number[]; warnings: number[]; info: number[]; debug: number[] }
+): { errorsWarningsConfig: string; trafficConfig: string } {
+  const sharedScaleOptions = {
+    x: {
+      grid: { color: 'rgba(255,255,255,0.06)' },
+      ticks: { color: '#71717a' },
+    },
+    y: {
+      beginAtZero: true,
+      grid: { color: 'rgba(255,255,255,0.06)' },
+      ticks: { color: '#71717a' },
+    },
+  }
+
+  const sharedOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      intersect: false,
+      mode: 'index' as const,
+    },
+    plugins: {
+      legend: {
+        position: 'bottom' as const,
+        labels: { color: '#71717a' },
+      },
+    },
+  }
+
+  const errorsWarningsConfig = {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Errors',
+          data: data.errors,
+          borderColor: styles.logColors.ERROR,
+          backgroundColor: styles.logColors.ERROR + '20',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+        },
+        {
+          label: 'Warnings',
+          data: data.warnings,
+          borderColor: styles.logColors.WARN,
+          backgroundColor: styles.logColors.WARN + '20',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+        },
+      ],
+    },
+    options: {
+      ...sharedOptions,
+      plugins: {
+        ...sharedOptions.plugins,
+        title: {
+          display: true,
+          text: 'Errors & Warnings',
+          color: '#71717a',
+          padding: { bottom: 8 },
+        },
+      },
+      scales: {
+        ...sharedScaleOptions,
+        x: {
+          ...sharedScaleOptions.x,
+          ticks: { ...sharedScaleOptions.x.ticks, display: false },
+        },
+      },
+    },
+  }
+
+  const trafficConfig = {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Info',
+          data: data.info,
+          borderColor: styles.logColors.INFO,
+          backgroundColor: styles.logColors.INFO + '20',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+        },
+        {
+          label: 'Debug',
+          data: data.debug,
+          borderColor: styles.logColors.DEBUG,
+          backgroundColor: styles.logColors.DEBUG + '20',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+        },
+      ],
+    },
+    options: {
+      ...sharedOptions,
+      plugins: {
+        ...sharedOptions.plugins,
+        title: {
+          display: true,
+          text: 'Traffic Volume',
+          color: '#71717a',
+          padding: { bottom: 8 },
+        },
+      },
+      scales: sharedScaleOptions,
+    },
+  }
+
+  return {
+    errorsWarningsConfig: JSON.stringify(errorsWarningsConfig),
+    trafficConfig: JSON.stringify(trafficConfig),
+  }
+}
+
+/**
  * Determine health status from recent checks
  */
 export function determineHealthStatus(

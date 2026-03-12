@@ -3,7 +3,7 @@
  */
 
 import { htmlDocument, header, statsCard } from '../components/layout'
-import { dailyStatsChartConfig, formatHealthStatus, determineHealthStatus } from '../components/charts'
+import { splitDailyStatsChartConfigs, formatHealthStatus, determineHealthStatus } from '../components/charts'
 import { escapeHtml, styles } from '../styles'
 import type { DailyStats, LogEntry, HealthCheck } from '../../types'
 import type { BrandConfig } from '../brand'
@@ -30,11 +30,12 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
 
   // Prepare chart data (reverse to show oldest first)
   const chartLabels = stats.map(s => s.date).reverse()
-  const chartConfig = dailyStatsChartConfig(chartLabels, [
-    { label: 'Errors', data: stats.map(s => s.error).reverse(), color: styles.logColors.ERROR },
-    { label: 'Warnings', data: stats.map(s => s.warn).reverse(), color: styles.logColors.WARN },
-    { label: 'Info', data: stats.map(s => s.info).reverse(), color: styles.logColors.INFO },
-  ])
+  const { errorsWarningsConfig, trafficConfig } = splitDailyStatsChartConfigs(chartLabels, {
+    errors: stats.map(s => s.error).reverse(),
+    warnings: stats.map(s => s.warn).reverse(),
+    info: stats.map(s => s.info).reverse(),
+    debug: stats.map(s => s.debug).reverse(),
+  })
 
   // Group health checks by URL
   const healthByUrl = new Map<string, HealthCheck[]>()
@@ -62,11 +63,14 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
       ${statsCard('Error (7d)', totals.error, 'text-red-400')}
     </div>
 
-    <!-- Stats Chart -->
+    <!-- Stats Charts -->
     <div class="brand-card rounded-lg p-4 mb-6">
-      <h3 class="font-medium mb-4">Log Activity (7 days)</h3>
-      <div class="h-64">
-        <canvas id="statsChart"></canvas>
+      <h3 class="font-medium mb-2">Log Activity (7 days)</h3>
+      <div class="h-40 mb-4">
+        <canvas id="errorsWarningsChart"></canvas>
+      </div>
+      <div class="h-48">
+        <canvas id="trafficChart"></canvas>
       </div>
     </div>
 
@@ -415,11 +419,15 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
       }
     }
 
-    // Initialize chart
+    // Initialize charts
     document.addEventListener('DOMContentLoaded', () => {
-      const ctx = document.getElementById('statsChart');
-      if (ctx) {
-        new Chart(ctx, ${chartConfig});
+      const ewCtx = document.getElementById('errorsWarningsChart');
+      if (ewCtx) {
+        new Chart(ewCtx, ${errorsWarningsConfig});
+      }
+      const trafficCtx = document.getElementById('trafficChart');
+      if (trafficCtx) {
+        new Chart(trafficCtx, ${trafficConfig});
       }
     });
   </script>`
