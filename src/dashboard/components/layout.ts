@@ -192,6 +192,7 @@ export function htmlDocument(content: string, options: LayoutOptions = {}): stri
 </head>
 <body class="min-h-screen">
 ${content}
+${footer(brand)}
 <script>${cardGlowScript}</script>
 </body>
 </html>`
@@ -267,10 +268,26 @@ export function statsCard(
 /**
  * Empty state component
  */
-export function emptyState(icon: string, message: string): string {
+export function emptyState(icon: string, message: string, hint?: string): string {
   return `
   <div class="text-center py-12" style="color: var(--text-muted);">
-    ${icon}
-    <p>${message}</p>
+    <div class="flex justify-center mb-3">${icon}</div>
+    <p class="font-medium">${message}</p>
+    ${hint ? `<p class="text-xs mt-1 opacity-70">${hint}</p>` : ''}
   </div>`
+}
+
+/**
+ * Branded footer component
+ */
+export function footer(brand: BrandConfig = DEFAULT_BRAND_CONFIG): string {
+  return `
+  <footer class="py-6 text-center text-xs" style="color: var(--text-muted); border-top: 1px solid var(--border);">
+    <div class="max-w-7xl mx-auto px-6 flex items-center justify-center gap-3">
+      <img src="${escapeHtml(brand.faviconUrl)}" alt="${escapeHtml(brand.name)}" style="height: 14px; width: auto; opacity: 0.5;">
+      <span>${escapeHtml(brand.name)} · Worker Logs</span>
+      <span style="opacity: 0.4;">·</span>
+      <span>Powered by Cloudflare Workers &amp; Durable Objects</span>
+    </div>
+  </footer>`
 }

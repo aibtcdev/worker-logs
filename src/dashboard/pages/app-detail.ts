@@ -273,7 +273,13 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
           </template>
           <template x-if="!loading && logs.length === 0">
             <tr>
-              <td colspan="4" class="px-4 py-8 text-center text-gray-500">No logs found</td>
+              <td colspan="4" class="px-4 py-12 text-center" style="color: var(--text-muted);">
+                <div class="flex flex-col items-center gap-2">
+                  <svg class="w-8 h-8 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                  <span class="font-medium">No logs match your current filters.</span>
+                  <span class="text-xs opacity-70">Try adjusting the date range, level, or search query.</span>
+                </div>
+              </td>
             </tr>
           </template>
           <template x-for="log in logs" :key="log.id">

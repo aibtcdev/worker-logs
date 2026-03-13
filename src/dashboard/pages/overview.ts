@@ -2,7 +2,7 @@
  * Overview page - unified view of all apps
  */
 
-import { htmlDocument, header, statsCard } from '../components/layout'
+import { htmlDocument, header, statsCard, emptyState } from '../components/layout'
 import { formatTrend, formatHealthStatus, overviewBarChartConfig, sparkline } from '../components/charts'
 import { escapeHtml } from '../styles'
 import type { OverviewResponse } from '../types'
@@ -103,7 +103,7 @@ export function overviewPage(data: OverviewResponse, apps: string[], brand: Bran
           </thead>
           <tbody class="divide-y divide-gray-700">
             ${appSummaries.map(app => `
-            <tr class="hover:bg-gray-750">
+            <tr class="log-row hover:bg-gray-750">
               <td class="px-4 py-3">
                 <a href="/dashboard/app/${app.id}" class="text-blue-400 hover:text-blue-300 font-medium">${escapeHtml(app.name)}</a>
                 ${app.name !== app.id ? `<div class="text-xs text-gray-500">${escapeHtml(app.id)}</div>` : ''}
@@ -134,11 +134,11 @@ export function overviewPage(data: OverviewResponse, apps: string[], brand: Bran
           </tbody>
         </table>
       </div>
-      ` : `
-      <div class="px-4 py-8 text-center text-gray-500">
-        No apps registered yet. Use the API to register your first app.
-      </div>
-      `}
+      ` : emptyState(
+        '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/></svg>',
+        'No apps registered yet.',
+        'Use POST /apps with an admin key to register your first app.'
+      )}
     </div>
 
     <!-- Recent Errors -->
@@ -159,7 +159,7 @@ export function overviewPage(data: OverviewResponse, apps: string[], brand: Bran
           </thead>
           <tbody class="divide-y divide-gray-700">
             ${recent_errors.map(error => `
-            <tr class="hover:bg-gray-750 cursor-pointer" @click="showError(${JSON.stringify(error).replace(/"/g, '&quot;')})">
+            <tr class="log-row hover:bg-gray-750 cursor-pointer" @click="showError(${JSON.stringify(error).replace(/"/g, '&quot;')})">
               <td class="px-4 py-2 text-gray-400 font-mono text-xs">
                 ${new Date(error.timestamp).toLocaleString()}
               </td>
@@ -179,11 +179,11 @@ export function overviewPage(data: OverviewResponse, apps: string[], brand: Bran
           </tbody>
         </table>
       </div>
-      ` : `
-      <div class="px-4 py-8 text-center text-gray-500">
-        No recent errors. Your apps are running smoothly!
-      </div>
-      `}
+      ` : emptyState(
+        '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>',
+        'No recent errors across all apps.',
+        'Your apps are running smoothly.'
+      )}
     </div>
 
     <!-- Error Detail Modal -->
