@@ -21,6 +21,24 @@ export interface AppSummary {
 }
 
 /**
+ * Per-app chart data for the overview bar chart
+ */
+export interface AppChartData {
+  id: string
+  name: string
+  errors: number[]
+  warnings: number[]
+}
+
+/**
+ * Response for the overview chart endpoint
+ */
+export interface OverviewChartResponse {
+  dates: string[]
+  apps: AppChartData[]
+}
+
+/**
  * Overview response for the dashboard
  */
 export interface OverviewResponse {

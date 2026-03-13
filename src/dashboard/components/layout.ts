@@ -192,6 +192,7 @@ export function htmlDocument(content: string, options: LayoutOptions = {}): stri
 </head>
 <body class="min-h-screen">
 ${content}
+${footer(brand)}
 <script>${cardGlowScript}</script>
 </body>
 </html>`
@@ -245,22 +246,48 @@ export function header(options: LayoutOptions = {}): string {
 
 /**
  * Stats card component with brand hover effect
+ * @param sparklineHtml - optional SVG sparkline HTML to show below the value
+ * @param subtext - optional small muted text below the value (e.g. "12% of all logs")
  */
-export function statsCard(label: string, value: number | string, colorClass: string = 'text-gray-100'): string {
+export function statsCard(
+  label: string,
+  value: number | string,
+  colorClass: string = 'text-gray-100',
+  sparklineHtml?: string,
+  subtext?: string
+): string {
   return `
   <div class="brand-card card-glow rounded-lg p-4">
     <div class="text-sm mb-1" style="color: var(--text-muted);">${label}</div>
     <div class="text-2xl font-bold ${colorClass}">${value}</div>
+    ${subtext ? `<div class="text-xs mt-1" style="color: var(--text-muted);">${subtext}</div>` : ''}
+    ${sparklineHtml ? `<div class="mt-2 h-5 w-full opacity-70">${sparklineHtml}</div>` : ''}
   </div>`
 }
 
 /**
  * Empty state component
  */
-export function emptyState(icon: string, message: string): string {
+export function emptyState(icon: string, message: string, hint?: string): string {
   return `
   <div class="text-center py-12" style="color: var(--text-muted);">
-    ${icon}
-    <p>${message}</p>
+    <div class="flex justify-center mb-3">${icon}</div>
+    <p class="font-medium">${message}</p>
+    ${hint ? `<p class="text-xs mt-1 opacity-70">${hint}</p>` : ''}
   </div>`
+}
+
+/**
+ * Branded footer component
+ */
+export function footer(brand: BrandConfig = DEFAULT_BRAND_CONFIG): string {
+  return `
+  <footer class="py-6 text-center text-xs" style="color: var(--text-muted); border-top: 1px solid var(--border);">
+    <div class="max-w-7xl mx-auto px-6 flex items-center justify-center gap-3">
+      <img src="${escapeHtml(brand.faviconUrl)}" alt="${escapeHtml(brand.name)}" style="height: 14px; width: auto; opacity: 0.5;">
+      <span>${escapeHtml(brand.name)} · Worker Logs</span>
+      <span style="opacity: 0.4;">·</span>
+      <span>Powered by Cloudflare Workers &amp; Durable Objects</span>
+    </div>
+  </footer>`
 }

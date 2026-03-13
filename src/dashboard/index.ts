@@ -13,7 +13,7 @@ import {
 import { loginPage } from './pages/login'
 import { overviewPage } from './pages/overview'
 import { appDetailPage, type AppDetailData } from './pages/app-detail'
-import { getOverview } from './api/overview'
+import { getOverview, getOverviewChart } from './api/overview'
 import { getAppList, getAppName, getHealthUrls } from './helpers'
 import { getBrandConfig, type BrandConfig } from './brand'
 
@@ -102,6 +102,17 @@ dashboard.get('/api/overview', async (c) => {
   }
 
   const data = await getOverview(c as any)
+  return c.json({ ok: true, data })
+})
+
+// API: Get overview chart data (per-app daily errors/warnings)
+dashboard.get('/api/overview/chart', async (c) => {
+  if (!await isAuthenticated(c as any)) {
+    return c.json({ ok: false, error: 'Unauthorized' }, 401)
+  }
+
+  const days = Math.min(Math.max(parseInt(c.req.query('days') || '7', 10), 1), 90)
+  const data = await getOverviewChart(c as any, days)
   return c.json({ ok: true, data })
 })
 

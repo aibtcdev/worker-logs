@@ -54,6 +54,7 @@ export const logLevelCss = `
   .trend-up { color: ${styles.trendColors.up}; }
   .trend-down { color: ${styles.trendColors.down}; }
   .trend-stable { color: ${styles.trendColors.stable}; }
+  tr.log-row { transition: background-color 0.1s ease; }
 `
 
 /**
