@@ -8,6 +8,14 @@ import type { OverviewResponse, AppSummary, OverviewChartResponse, AppChartData 
 import { calculateTrend, determineHealthStatus } from '../components/charts'
 import { getAppList, getAppName } from '../helpers'
 
+/** Add stats counts to an accumulator in-place */
+function addStats(acc: { debug: number; info: number; warn: number; error: number }, s: DailyStats): void {
+  acc.debug += s.debug
+  acc.info += s.info
+  acc.warn += s.warn
+  acc.error += s.error
+}
+
 /**
  * Get overview data for all apps
  */
@@ -42,14 +50,8 @@ export async function getOverview(c: Context<{ Bindings: Env }>): Promise<Overvi
     if (!data) continue
 
     // Aggregate totals
-    totals.today.debug += data.today_stats.debug
-    totals.today.info += data.today_stats.info
-    totals.today.warn += data.today_stats.warn
-    totals.today.error += data.today_stats.error
-    totals.yesterday.debug += data.yesterday_stats.debug
-    totals.yesterday.info += data.yesterday_stats.info
-    totals.yesterday.warn += data.yesterday_stats.warn
-    totals.yesterday.error += data.yesterday_stats.error
+    addStats(totals.today, data.today_stats)
+    addStats(totals.yesterday, data.yesterday_stats)
 
     // Calculate error trend
     const errorTrend = calculateTrend(data.today_stats.error, data.yesterday_stats.error)

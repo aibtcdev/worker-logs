@@ -32,20 +32,23 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
   const totalLogs = totals.debug + totals.info + totals.warn + totals.error
   const errorRate = totalLogs > 0 ? Math.round((totals.error / totalLogs) * 100) : 0
 
-  // Build sparkline data arrays (oldest-first for left-to-right trend)
+  // Reverse once for oldest-first display (sparklines and charts)
   const statsOldestFirst = stats.slice().reverse()
-  const debugSparkline = sparkline(statsOldestFirst.map(s => s.debug), { color: '#9CA3AF', showArea: true, width: 100, height: 20 })
-  const infoSparkline = sparkline(statsOldestFirst.map(s => s.info), { color: '#60A5FA', showArea: true, width: 100, height: 20 })
-  const warnSparkline = sparkline(statsOldestFirst.map(s => s.warn), { color: '#FBBF24', showArea: true, width: 100, height: 20 })
-  const errorSparkline = sparkline(statsOldestFirst.map(s => s.error), { color: '#F87171', showArea: true, width: 100, height: 20 })
 
-  // Prepare chart data (reverse to show oldest first)
-  const chartLabels = stats.map(s => s.date).reverse()
+  // Build sparkline data arrays
+  const sparklineOpts = { showArea: true, width: 100, height: 20 } as const
+  const debugSparkline = sparkline(statsOldestFirst.map(s => s.debug), { ...sparklineOpts, color: '#9CA3AF' })
+  const infoSparkline = sparkline(statsOldestFirst.map(s => s.info), { ...sparklineOpts, color: '#60A5FA' })
+  const warnSparkline = sparkline(statsOldestFirst.map(s => s.warn), { ...sparklineOpts, color: '#FBBF24' })
+  const errorSparkline = sparkline(statsOldestFirst.map(s => s.error), { ...sparklineOpts, color: '#F87171' })
+
+  // Prepare chart data from the already-reversed array
+  const chartLabels = statsOldestFirst.map(s => s.date)
   const { errorsWarningsConfig, trafficConfig } = splitDailyStatsChartConfigs(chartLabels, {
-    errors: stats.map(s => s.error).reverse(),
-    warnings: stats.map(s => s.warn).reverse(),
-    info: stats.map(s => s.info).reverse(),
-    debug: stats.map(s => s.debug).reverse(),
+    errors: statsOldestFirst.map(s => s.error),
+    warnings: statsOldestFirst.map(s => s.warn),
+    info: statsOldestFirst.map(s => s.info),
+    debug: statsOldestFirst.map(s => s.debug),
   })
 
   // Group health checks by URL

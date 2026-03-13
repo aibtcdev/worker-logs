@@ -259,13 +259,9 @@ export function overviewPage(data: OverviewResponse, apps: string[], brand: Bran
           }
         },
 
-        async refreshData() {
+        refreshData() {
           this.loading = true;
-          try {
-            window.location.reload();
-          } finally {
-            this.loading = false;
-          }
+          window.location.reload();
         },
 
         showError(error) {
