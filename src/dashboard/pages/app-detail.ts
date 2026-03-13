@@ -3,7 +3,7 @@
  */
 
 import { htmlDocument, header } from '../components/layout'
-import { splitDailyStatsChartConfigs, formatHealthStatus, determineHealthStatus } from '../components/charts'
+import { splitDailyStatsChartConfigs, formatHealthStatus, determineHealthStatus, sparkline } from '../components/charts'
 import { escapeHtml, styles } from '../styles'
 import type { DailyStats, LogEntry, HealthCheck } from '../../types'
 import type { BrandConfig } from '../brand'
@@ -27,6 +27,17 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
     warn: acc.warn + day.warn,
     error: acc.error + day.error,
   }), { debug: 0, info: 0, warn: 0, error: 0 })
+
+  // Compute error rate for the initial period
+  const totalLogs = totals.debug + totals.info + totals.warn + totals.error
+  const errorRate = totalLogs > 0 ? Math.round((totals.error / totalLogs) * 100) : 0
+
+  // Build sparkline data arrays (oldest-first for left-to-right trend)
+  const statsOldestFirst = stats.slice().reverse()
+  const debugSparkline = sparkline(statsOldestFirst.map(s => s.debug), { color: '#9CA3AF', showArea: true, width: 100, height: 20 })
+  const infoSparkline = sparkline(statsOldestFirst.map(s => s.info), { color: '#60A5FA', showArea: true, width: 100, height: 20 })
+  const warnSparkline = sparkline(statsOldestFirst.map(s => s.warn), { color: '#FBBF24', showArea: true, width: 100, height: 20 })
+  const errorSparkline = sparkline(statsOldestFirst.map(s => s.error), { color: '#F87171', showArea: true, width: 100, height: 20 })
 
   // Prepare chart data (reverse to show oldest first)
   const chartLabels = stats.map(s => s.date).reverse()
@@ -57,21 +68,26 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      <div class="brand-card rounded-lg p-4">
-        <div class="text-xs text-gray-400 mb-1">Debug (<span x-text="statsRange + 'd'">7d</span>)</div>
+      <div class="brand-card card-glow rounded-lg p-4">
+        <div class="text-xs mb-1" style="color: var(--text-muted);">Debug (<span x-text="statsRange + 'd'">7d</span>)</div>
         <div class="text-2xl font-bold text-gray-400" x-text="statsTotals.debug">${totals.debug}</div>
+        <div class="mt-2 h-5 w-full opacity-70">${debugSparkline}</div>
       </div>
-      <div class="brand-card rounded-lg p-4">
-        <div class="text-xs text-gray-400 mb-1">Info (<span x-text="statsRange + 'd'">7d</span>)</div>
+      <div class="brand-card card-glow rounded-lg p-4">
+        <div class="text-xs mb-1" style="color: var(--text-muted);">Info (<span x-text="statsRange + 'd'">7d</span>)</div>
         <div class="text-2xl font-bold text-blue-400" x-text="statsTotals.info">${totals.info}</div>
+        <div class="mt-2 h-5 w-full opacity-70">${infoSparkline}</div>
       </div>
-      <div class="brand-card rounded-lg p-4">
-        <div class="text-xs text-gray-400 mb-1">Warn (<span x-text="statsRange + 'd'">7d</span>)</div>
+      <div class="brand-card card-glow rounded-lg p-4">
+        <div class="text-xs mb-1" style="color: var(--text-muted);">Warn (<span x-text="statsRange + 'd'">7d</span>)</div>
         <div class="text-2xl font-bold text-yellow-400" x-text="statsTotals.warn">${totals.warn}</div>
+        <div class="mt-2 h-5 w-full opacity-70">${warnSparkline}</div>
       </div>
-      <div class="brand-card rounded-lg p-4">
-        <div class="text-xs text-gray-400 mb-1">Error (<span x-text="statsRange + 'd'">7d</span>)</div>
+      <div class="brand-card card-glow rounded-lg p-4">
+        <div class="text-xs mb-1" style="color: var(--text-muted);">Error (<span x-text="statsRange + 'd'">7d</span>)</div>
         <div class="text-2xl font-bold text-red-400" x-text="statsTotals.error">${totals.error}</div>
+        ${errorRate > 0 ? `<div class="text-xs mt-1" style="color: var(--text-muted);">${errorRate}% of all logs</div>` : ''}
+        <div class="mt-2 h-5 w-full opacity-70">${errorSparkline}</div>
       </div>
     </div>
 

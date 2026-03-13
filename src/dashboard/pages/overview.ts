@@ -3,7 +3,7 @@
  */
 
 import { htmlDocument, header, statsCard } from '../components/layout'
-import { formatTrend, formatHealthStatus, overviewBarChartConfig } from '../components/charts'
+import { formatTrend, formatHealthStatus, overviewBarChartConfig, sparkline } from '../components/charts'
 import { escapeHtml } from '../styles'
 import type { OverviewResponse } from '../types'
 import type { BrandConfig } from '../brand'
@@ -16,6 +16,25 @@ export function overviewPage(data: OverviewResponse, apps: string[], brand: Bran
   const appsWithErrors = appSummaries.filter(a => a.today_stats.error > 0).length
   const totalApps = appSummaries.length
 
+  // Compute total log volume for error rate calculation
+  const todayTotal = totals.today.debug + totals.today.info + totals.today.warn + totals.today.error
+  const errorRate = todayTotal > 0 ? Math.round((totals.today.error / todayTotal) * 100) : 0
+  const warnRate = todayTotal > 0 ? Math.round((totals.today.warn / todayTotal) * 100) : 0
+
+  // 2-point sparklines: [yesterday, today]
+  const errorSparkline = sparkline(
+    [totals.yesterday.error, totals.today.error],
+    { color: '#F87171', showArea: true, width: 100, height: 20 }
+  )
+  const warnSparkline = sparkline(
+    [totals.yesterday.warn, totals.today.warn],
+    { color: '#FBBF24', showArea: true, width: 100, height: 20 }
+  )
+  const infoSparkline = sparkline(
+    [totals.yesterday.info, totals.today.info],
+    { color: '#60A5FA', showArea: true, width: 100, height: 20 }
+  )
+
   // Initial empty chart config — populated via loadChartData() on DOMContentLoaded
   const initialChartConfig = overviewBarChartConfig([], [])
 
@@ -25,10 +44,10 @@ export function overviewPage(data: OverviewResponse, apps: string[], brand: Bran
   <main class="max-w-7xl mx-auto px-6 py-6" x-data="overviewState()">
     <!-- Error Summary Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      ${statsCard('Total Errors (24h)', totalErrors, 'text-red-400')}
+      ${statsCard('Total Errors (24h)', totalErrors, 'text-red-400', errorSparkline, errorRate > 0 ? `${errorRate}% of all logs` : undefined)}
       ${statsCard('Apps with Issues', `${appsWithErrors}/${totalApps}`, appsWithErrors > 0 ? 'text-yellow-400' : 'text-green-400')}
-      ${statsCard('Total Warnings', totals.today.warn, 'text-yellow-400')}
-      ${statsCard('Total Info', totals.today.info, 'text-blue-400')}
+      ${statsCard('Total Warnings', totals.today.warn, 'text-yellow-400', warnSparkline, warnRate > 0 ? `${warnRate}% of all logs` : undefined)}
+      ${statsCard('Total Info', totals.today.info, 'text-blue-400', infoSparkline)}
     </div>
 
     <!-- Overview Chart -->

@@ -245,12 +245,22 @@ export function header(options: LayoutOptions = {}): string {
 
 /**
  * Stats card component with brand hover effect
+ * @param sparklineHtml - optional SVG sparkline HTML to show below the value
+ * @param subtext - optional small muted text below the value (e.g. "12% of all logs")
  */
-export function statsCard(label: string, value: number | string, colorClass: string = 'text-gray-100'): string {
+export function statsCard(
+  label: string,
+  value: number | string,
+  colorClass: string = 'text-gray-100',
+  sparklineHtml?: string,
+  subtext?: string
+): string {
   return `
   <div class="brand-card card-glow rounded-lg p-4">
     <div class="text-sm mb-1" style="color: var(--text-muted);">${label}</div>
     <div class="text-2xl font-bold ${colorClass}">${value}</div>
+    ${subtext ? `<div class="text-xs mt-1" style="color: var(--text-muted);">${subtext}</div>` : ''}
+    ${sparklineHtml ? `<div class="mt-2 h-5 w-full opacity-70">${sparklineHtml}</div>` : ''}
   </div>`
 }
 
