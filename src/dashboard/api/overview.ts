@@ -4,7 +4,7 @@
 
 import type { Context } from 'hono'
 import type { Env, DailyStats, LogEntry } from '../../types'
-import type { OverviewResponse, AppSummary } from '../types'
+import type { OverviewResponse, AppSummary, OverviewChartResponse, AppChartData } from '../types'
 import { calculateTrend, determineHealthStatus } from '../components/charts'
 import { getAppList, getAppName } from '../helpers'
 
@@ -84,6 +84,67 @@ export async function getOverview(c: Context<{ Bindings: Env }>): Promise<Overvi
     apps: appSummaries,
     totals,
     recent_errors,
+  }
+}
+
+/**
+ * Get per-app daily stats for the overview bar chart
+ */
+export async function getOverviewChart(
+  c: Context<{ Bindings: Env }>,
+  days: number
+): Promise<OverviewChartResponse> {
+  const apps = await getAppList(c)
+
+  if (apps.length === 0) {
+    return { dates: [], apps: [] }
+  }
+
+  // Fetch stats for all apps in parallel
+  const appStatsPromises = apps.map(async (appId) => {
+    try {
+      const name = await getAppName(c, appId)
+      const id = c.env.APP_LOGS_DO.idFromName(appId)
+      const stub = c.env.APP_LOGS_DO.get(id)
+      const res = await stub.fetch(new Request(`http://do/stats?days=${days}`))
+      const data = await res.json() as { ok: boolean; data: DailyStats[] }
+      return { appId, name, stats: data.ok ? (data.data || []) : [] }
+    } catch {
+      return { appId, name: appId, stats: [] as DailyStats[] }
+    }
+  })
+
+  const appStats = await Promise.all(appStatsPromises)
+
+  // Build a unified sorted date list across all apps
+  const dateSet = new Set<string>()
+  for (const { stats } of appStats) {
+    for (const s of stats) {
+      dateSet.add(s.date)
+    }
+  }
+  const dates = Array.from(dateSet).sort()
+
+  // Build per-app aligned arrays
+  const chartApps: AppChartData[] = appStats.map(({ appId, name, stats }) => {
+    const byDate = new Map<string, DailyStats>()
+    for (const s of stats) {
+      byDate.set(s.date, s)
+    }
+    return {
+      id: appId,
+      name,
+      errors: dates.map(d => byDate.get(d)?.error ?? 0),
+      warnings: dates.map(d => byDate.get(d)?.warn ?? 0),
+    }
+  })
+
+  // Only include apps that have at least one error or warning to keep the chart readable
+  const activeApps = chartApps.filter(a => a.errors.some(v => v > 0) || a.warnings.some(v => v > 0))
+
+  return {
+    dates,
+    apps: activeApps.length > 0 ? activeApps : chartApps,
   }
 }
 

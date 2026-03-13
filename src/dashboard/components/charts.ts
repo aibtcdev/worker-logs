@@ -260,6 +260,75 @@ export function splitDailyStatsChartConfigs(
 }
 
 /**
+ * Generate Chart.js configuration for the overview grouped bar chart.
+ * Shows errors and warnings per app over time (one pair of bars per app per day).
+ */
+export function overviewBarChartConfig(
+  labels: string[],
+  apps: Array<{ id: string; name: string; errors: number[]; warnings: number[] }>
+): string {
+  const datasets: object[] = []
+
+  for (const app of apps) {
+    datasets.push({
+      label: `${app.name} Errors`,
+      data: app.errors,
+      backgroundColor: styles.logColors.ERROR + '99',
+      borderColor: styles.logColors.ERROR,
+      borderWidth: 1,
+      borderRadius: 2,
+      barThickness: 'flex' as const,
+    })
+    datasets.push({
+      label: `${app.name} Warns`,
+      data: app.warnings,
+      backgroundColor: styles.logColors.WARN + '99',
+      borderColor: styles.logColors.WARN,
+      borderWidth: 1,
+      borderRadius: 2,
+      barThickness: 'flex' as const,
+    })
+  }
+
+  const config = {
+    type: 'bar',
+    data: {
+      labels,
+      datasets,
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: 'index' as const,
+      },
+      plugins: {
+        legend: {
+          position: 'bottom' as const,
+          labels: { color: '#71717a' },
+        },
+      },
+      scales: {
+        x: {
+          stacked: false,
+          grid: { color: 'rgba(255,255,255,0.06)' },
+          ticks: { color: '#71717a' },
+        },
+        y: {
+          stacked: false,
+          beginAtZero: true,
+          grid: { color: 'rgba(255,255,255,0.06)' },
+          ticks: { color: '#71717a' },
+        },
+      },
+    },
+  }
+
+  return JSON.stringify(config)
+}
+
+/**
  * Determine health status from recent checks
  */
 export function determineHealthStatus(

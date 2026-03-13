@@ -3,8 +3,8 @@
  */
 
 import { htmlDocument, header, statsCard } from '../components/layout'
-import { sparkline, formatTrend, formatHealthStatus, dailyStatsChartConfig } from '../components/charts'
-import { escapeHtml, styles } from '../styles'
+import { formatTrend, formatHealthStatus, overviewBarChartConfig } from '../components/charts'
+import { escapeHtml } from '../styles'
 import type { OverviewResponse } from '../types'
 import type { BrandConfig } from '../brand'
 import { DEFAULT_BRAND_CONFIG } from '../brand'
@@ -16,11 +16,8 @@ export function overviewPage(data: OverviewResponse, apps: string[], brand: Bran
   const appsWithErrors = appSummaries.filter(a => a.today_stats.error > 0).length
   const totalApps = appSummaries.length
 
-  // Generate sparkline data (last 7 days would need additional API call, using placeholder)
-  const errorTrendData = [
-    totals.yesterday.error,
-    totals.today.error,
-  ]
+  // Initial empty chart config — populated via loadChartData() on DOMContentLoaded
+  const initialChartConfig = overviewBarChartConfig([], [])
 
   const content = `
   ${header({ currentView: 'overview', apps, brand })}
@@ -32,6 +29,33 @@ export function overviewPage(data: OverviewResponse, apps: string[], brand: Bran
       ${statsCard('Apps with Issues', `${appsWithErrors}/${totalApps}`, appsWithErrors > 0 ? 'text-yellow-400' : 'text-green-400')}
       ${statsCard('Total Warnings', totals.today.warn, 'text-yellow-400')}
       ${statsCard('Total Info', totals.today.info, 'text-blue-400')}
+    </div>
+
+    <!-- Overview Chart -->
+    <div class="brand-card rounded-lg p-4 mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-medium">Errors &amp; Warnings by App (<span x-text="chartRange + 'd'">7d</span>)</h2>
+        <div class="flex items-center gap-1">
+          <button @click="setChartRange(7)"
+                  :class="chartRange === 7 ? 'bg-gray-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-400'"
+                  class="px-3 py-1 text-xs rounded transition-colors">7d</button>
+          <button @click="setChartRange(14)"
+                  :class="chartRange === 14 ? 'bg-gray-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-400'"
+                  class="px-3 py-1 text-xs rounded transition-colors">14d</button>
+          <button @click="setChartRange(30)"
+                  :class="chartRange === 30 ? 'bg-gray-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-400'"
+                  class="px-3 py-1 text-xs rounded transition-colors">30d</button>
+        </div>
+      </div>
+      <div x-show="chartLoading" class="flex justify-center py-4">
+        <svg class="animate-spin h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </div>
+      <div x-show="!chartLoading" class="h-64">
+        <canvas id="overviewChart"></canvas>
+      </div>
     </div>
 
     <!-- App Health Table -->
@@ -160,24 +184,84 @@ export function overviewPage(data: OverviewResponse, apps: string[], brand: Bran
   </main>
 
   <script>
+    // Chart instance — set in DOMContentLoaded, updated by loadChartData()
+    var overviewChart = null;
+
     function overviewState() {
       return {
         loading: false,
         selectedError: null,
+        chartRange: 7,
+        chartLoading: false,
+
+        init() {
+          this.loadChartData();
+        },
+
+        setChartRange(days) {
+          this.chartRange = days;
+          this.loadChartData();
+        },
+
+        async loadChartData() {
+          this.chartLoading = true;
+          try {
+            const res = await fetch('/dashboard/api/overview/chart?days=' + this.chartRange);
+            const data = await res.json();
+            if (data.ok && data.data && overviewChart) {
+              const { dates, apps } = data.data;
+              const datasets = [];
+              for (const app of apps) {
+                datasets.push({
+                  label: app.name + ' Errors',
+                  data: app.errors,
+                  backgroundColor: '#F8717199',
+                  borderColor: '#F87171',
+                  borderWidth: 1,
+                  borderRadius: 2,
+                });
+                datasets.push({
+                  label: app.name + ' Warns',
+                  data: app.warnings,
+                  backgroundColor: '#FBBF2499',
+                  borderColor: '#FBBF24',
+                  borderWidth: 1,
+                  borderRadius: 2,
+                });
+              }
+              overviewChart.data.labels = dates;
+              overviewChart.data.datasets = datasets;
+              overviewChart.update();
+            }
+          } catch (err) {
+            console.error('Failed to load chart data:', err);
+          } finally {
+            this.chartLoading = false;
+          }
+        },
+
         async refreshData() {
           this.loading = true;
           try {
-            // Reload the page to get fresh data
             window.location.reload();
           } finally {
             this.loading = false;
           }
         },
+
         showError(error) {
           this.selectedError = error;
         }
       }
     }
+
+    // Initialize chart with empty config; loadChartData() populates it via Alpine init()
+    document.addEventListener('DOMContentLoaded', () => {
+      const ctx = document.getElementById('overviewChart');
+      if (ctx) {
+        overviewChart = new Chart(ctx, ${initialChartConfig});
+      }
+    });
   </script>`
 
   return htmlDocument(content, { title: 'Worker Logs - Overview', brand })
