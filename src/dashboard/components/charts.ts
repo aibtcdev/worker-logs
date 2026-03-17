@@ -82,48 +82,158 @@ export function dailyStatsChartConfig(
   labels: string[],
   datasets: { label: string; data: number[]; color: string }[]
 ): string {
-  const config = {
+  return JSON.stringify({
     type: 'line',
     data: {
       labels,
-      datasets: datasets.map(ds => ({
-        label: ds.label,
-        data: ds.data,
-        borderColor: ds.color,
-        backgroundColor: ds.color + '20',
-        tension: 0.3,
-        fill: true,
-        pointRadius: 3,
-        pointHoverRadius: 5,
-      })),
+      datasets: datasets.map(ds => lineDataset(ds.label, ds.data, ds.color)),
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      ...CHART_BASE_OPTIONS,
+      scales: CHART_SCALES,
+    },
+  })
+}
+
+/**
+ * Build a single line-chart dataset entry
+ */
+function lineDataset(label: string, data: number[], color: string) {
+  return {
+    label,
+    data,
+    borderColor: color,
+    backgroundColor: color + '20',
+    tension: 0.3,
+    fill: true,
+    pointRadius: 3,
+    pointHoverRadius: 5,
+  }
+}
+
+/** Shared scale options used across chart configurations */
+const CHART_SCALES = {
+  x: {
+    grid: { color: 'rgba(255,255,255,0.06)' },
+    ticks: { color: '#71717a' },
+  },
+  y: {
+    beginAtZero: true,
+    grid: { color: 'rgba(255,255,255,0.06)' },
+    ticks: { color: '#71717a' },
+  },
+}
+
+/** Shared base options used across chart configurations */
+const CHART_BASE_OPTIONS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: {
+    intersect: false,
+    mode: 'index' as const,
+  },
+  plugins: {
+    legend: {
+      position: 'bottom' as const,
+      labels: { color: '#71717a' },
+    },
+  },
+}
+
+/**
+ * Build a titled line chart config (serialized to JSON)
+ */
+function titledLineChart(
+  labels: string[],
+  datasets: ReturnType<typeof lineDataset>[],
+  title: string,
+  scaleOverrides?: Record<string, unknown>
+): string {
+  return JSON.stringify({
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      ...CHART_BASE_OPTIONS,
       plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { color: '#71717a' },
-        },
+        ...CHART_BASE_OPTIONS.plugins,
+        title: { display: true, text: title, color: '#71717a', padding: { bottom: 8 } },
       },
+      scales: { ...CHART_SCALES, ...scaleOverrides },
+    },
+  })
+}
+
+/**
+ * Generate two Chart.js configurations for split daily stats display:
+ * - errorsWarningsConfig: errors + warnings on their own small y-axis (top chart)
+ * - trafficConfig: info + debug traffic volume (bottom chart)
+ * Both share the same x-axis labels for visual correlation.
+ */
+export function splitDailyStatsChartConfigs(
+  labels: string[],
+  data: { errors: number[]; warnings: number[]; info: number[]; debug: number[] }
+): { errorsWarningsConfig: string; trafficConfig: string } {
+  const errorsWarningsConfig = titledLineChart(
+    labels,
+    [
+      lineDataset('Errors', data.errors, styles.logColors.ERROR),
+      lineDataset('Warnings', data.warnings, styles.logColors.WARN),
+    ],
+    'Errors & Warnings',
+    { x: { ...CHART_SCALES.x, ticks: { ...CHART_SCALES.x.ticks, display: false } } }
+  )
+
+  const trafficConfig = titledLineChart(
+    labels,
+    [
+      lineDataset('Info', data.info, styles.logColors.INFO),
+      lineDataset('Debug', data.debug, styles.logColors.DEBUG),
+    ],
+    'Traffic Volume'
+  )
+
+  return { errorsWarningsConfig, trafficConfig }
+}
+
+/**
+ * Build a single bar-chart dataset entry
+ */
+function barDataset(label: string, data: number[], color: string) {
+  return {
+    label,
+    data,
+    backgroundColor: color + '99',
+    borderColor: color,
+    borderWidth: 1,
+    borderRadius: 2,
+    barThickness: 'flex' as const,
+  }
+}
+
+/**
+ * Generate Chart.js configuration for the overview grouped bar chart.
+ * Shows errors and warnings per app over time (one pair of bars per app per day).
+ */
+export function overviewBarChartConfig(
+  labels: string[],
+  apps: Array<{ id: string; name: string; errors: number[]; warnings: number[] }>
+): string {
+  const datasets = apps.flatMap(app => [
+    barDataset(`${app.name} Errors`, app.errors, styles.logColors.ERROR),
+    barDataset(`${app.name} Warns`, app.warnings, styles.logColors.WARN),
+  ])
+
+  return JSON.stringify({
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      ...CHART_BASE_OPTIONS,
       scales: {
-        x: {
-          grid: { color: 'rgba(255,255,255,0.06)' },
-          ticks: { color: '#71717a' },
-        },
-        y: {
-          beginAtZero: true,
-          grid: { color: 'rgba(255,255,255,0.06)' },
-          ticks: { color: '#71717a' },
-        },
-      },
-      interaction: {
-        intersect: false,
-        mode: 'index',
+        x: { ...CHART_SCALES.x, stacked: false },
+        y: { ...CHART_SCALES.y, stacked: false },
       },
     },
-  }
-  return JSON.stringify(config)
+  })
 }
 
 /**

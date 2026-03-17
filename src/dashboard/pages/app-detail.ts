@@ -2,8 +2,8 @@
  * App detail page - single app view with advanced filtering
  */
 
-import { htmlDocument, header, statsCard } from '../components/layout'
-import { dailyStatsChartConfig, formatHealthStatus, determineHealthStatus } from '../components/charts'
+import { htmlDocument, header } from '../components/layout'
+import { splitDailyStatsChartConfigs, formatHealthStatus, determineHealthStatus, sparkline } from '../components/charts'
 import { escapeHtml, styles } from '../styles'
 import type { DailyStats, LogEntry, HealthCheck } from '../../types'
 import type { BrandConfig } from '../brand'
@@ -20,7 +20,7 @@ export interface AppDetailData {
 export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandConfig = DEFAULT_BRAND_CONFIG): string {
   const { appId, appName, stats, healthChecks, healthUrls } = data
 
-  // Calculate totals for the period
+  // Calculate totals for the initial period
   const totals = stats.reduce((acc, day) => ({
     debug: acc.debug + day.debug,
     info: acc.info + day.info,
@@ -28,13 +28,28 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
     error: acc.error + day.error,
   }), { debug: 0, info: 0, warn: 0, error: 0 })
 
-  // Prepare chart data (reverse to show oldest first)
-  const chartLabels = stats.map(s => s.date).reverse()
-  const chartConfig = dailyStatsChartConfig(chartLabels, [
-    { label: 'Errors', data: stats.map(s => s.error).reverse(), color: styles.logColors.ERROR },
-    { label: 'Warnings', data: stats.map(s => s.warn).reverse(), color: styles.logColors.WARN },
-    { label: 'Info', data: stats.map(s => s.info).reverse(), color: styles.logColors.INFO },
-  ])
+  // Compute error rate for the initial period
+  const totalLogs = totals.debug + totals.info + totals.warn + totals.error
+  const errorRate = totalLogs > 0 ? Math.round((totals.error / totalLogs) * 100) : 0
+
+  // Reverse once for oldest-first display (sparklines and charts)
+  const statsOldestFirst = stats.slice().reverse()
+
+  // Build sparkline data arrays
+  const sparklineOpts = { showArea: true, width: 100, height: 20 } as const
+  const debugSparkline = sparkline(statsOldestFirst.map(s => s.debug), { ...sparklineOpts, color: '#9CA3AF' })
+  const infoSparkline = sparkline(statsOldestFirst.map(s => s.info), { ...sparklineOpts, color: '#60A5FA' })
+  const warnSparkline = sparkline(statsOldestFirst.map(s => s.warn), { ...sparklineOpts, color: '#FBBF24' })
+  const errorSparkline = sparkline(statsOldestFirst.map(s => s.error), { ...sparklineOpts, color: '#F87171' })
+
+  // Prepare chart data from the already-reversed array
+  const chartLabels = statsOldestFirst.map(s => s.date)
+  const { errorsWarningsConfig, trafficConfig } = splitDailyStatsChartConfigs(chartLabels, {
+    errors: statsOldestFirst.map(s => s.error),
+    warnings: statsOldestFirst.map(s => s.warn),
+    info: statsOldestFirst.map(s => s.info),
+    debug: statsOldestFirst.map(s => s.debug),
+  })
 
   // Group health checks by URL
   const healthByUrl = new Map<string, HealthCheck[]>()
@@ -54,19 +69,60 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
       ${appName !== appId ? `<div class="text-sm text-gray-500">${escapeHtml(appId)}</div>` : ''}
     </div>
 
-    <!-- Stats Cards (7 day totals) -->
+    <!-- Stats Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      ${statsCard('Debug (7d)', totals.debug, 'text-gray-400')}
-      ${statsCard('Info (7d)', totals.info, 'text-blue-400')}
-      ${statsCard('Warn (7d)', totals.warn, 'text-yellow-400')}
-      ${statsCard('Error (7d)', totals.error, 'text-red-400')}
+      <div class="brand-card card-glow rounded-lg p-4">
+        <div class="text-xs mb-1" style="color: var(--text-muted);">Debug (<span x-text="statsRange + 'd'">7d</span>)</div>
+        <div class="text-2xl font-bold text-gray-400" x-text="statsTotals.debug">${totals.debug}</div>
+        <div class="mt-2 h-5 w-full opacity-70">${debugSparkline}</div>
+      </div>
+      <div class="brand-card card-glow rounded-lg p-4">
+        <div class="text-xs mb-1" style="color: var(--text-muted);">Info (<span x-text="statsRange + 'd'">7d</span>)</div>
+        <div class="text-2xl font-bold text-blue-400" x-text="statsTotals.info">${totals.info}</div>
+        <div class="mt-2 h-5 w-full opacity-70">${infoSparkline}</div>
+      </div>
+      <div class="brand-card card-glow rounded-lg p-4">
+        <div class="text-xs mb-1" style="color: var(--text-muted);">Warn (<span x-text="statsRange + 'd'">7d</span>)</div>
+        <div class="text-2xl font-bold text-yellow-400" x-text="statsTotals.warn">${totals.warn}</div>
+        <div class="mt-2 h-5 w-full opacity-70">${warnSparkline}</div>
+      </div>
+      <div class="brand-card card-glow rounded-lg p-4">
+        <div class="text-xs mb-1" style="color: var(--text-muted);">Error (<span x-text="statsRange + 'd'">7d</span>)</div>
+        <div class="text-2xl font-bold text-red-400" x-text="statsTotals.error">${totals.error}</div>
+        ${errorRate > 0 ? `<div class="text-xs mt-1" style="color: var(--text-muted);">${errorRate}% of all logs</div>` : ''}
+        <div class="mt-2 h-5 w-full opacity-70">${errorSparkline}</div>
+      </div>
     </div>
 
-    <!-- Stats Chart -->
+    <!-- Stats Charts -->
     <div class="brand-card rounded-lg p-4 mb-6">
-      <h3 class="font-medium mb-4">Log Activity (7 days)</h3>
-      <div class="h-64">
-        <canvas id="statsChart"></canvas>
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-medium">Log Activity (<span x-text="statsRange + 'd'">7d</span>)</h3>
+        <div class="flex items-center gap-1">
+          <button @click="setStatsRange(7)"
+                  :class="statsRange === 7 ? 'bg-gray-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-400'"
+                  class="px-3 py-1 text-xs rounded transition-colors">7d</button>
+          <button @click="setStatsRange(14)"
+                  :class="statsRange === 14 ? 'bg-gray-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-400'"
+                  class="px-3 py-1 text-xs rounded transition-colors">14d</button>
+          <button @click="setStatsRange(30)"
+                  :class="statsRange === 30 ? 'bg-gray-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-400'"
+                  class="px-3 py-1 text-xs rounded transition-colors">30d</button>
+        </div>
+      </div>
+      <div x-show="statsLoading" class="flex justify-center py-4">
+        <svg class="animate-spin h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </div>
+      <div x-show="!statsLoading">
+        <div class="h-40 mb-4">
+          <canvas id="errorsWarningsChart"></canvas>
+        </div>
+        <div class="h-48">
+          <canvas id="trafficChart"></canvas>
+        </div>
       </div>
     </div>
 
@@ -220,7 +276,13 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
           </template>
           <template x-if="!loading && logs.length === 0">
             <tr>
-              <td colspan="4" class="px-4 py-8 text-center text-gray-500">No logs found</td>
+              <td colspan="4" class="px-4 py-12 text-center" style="color: var(--text-muted);">
+                <div class="flex flex-col items-center gap-2">
+                  <svg class="w-8 h-8 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                  <span class="font-medium">No logs match your current filters.</span>
+                  <span class="text-xs opacity-70">Try adjusting the date range, level, or search query.</span>
+                </div>
+              </td>
             </tr>
           </template>
           <template x-for="log in logs" :key="log.id">
@@ -271,6 +333,10 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
   <script>
     const APP_ID = '${appId}';
 
+    // Chart instances — set in DOMContentLoaded, updated by loadStats()
+    var ewChart = null;
+    var trafficChart = null;
+
     function appDetailState() {
       return {
         logs: [],
@@ -280,6 +346,9 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
         autoRefreshInterval: null,
         offset: 0,
         limit: 50,
+        statsRange: 7,
+        statsLoading: false,
+        statsTotals: { debug: ${totals.debug}, info: ${totals.info}, warn: ${totals.warn}, error: ${totals.error} },
         filters: {
           dateRange: '7d',
           since: '',
@@ -292,6 +361,54 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
 
         init() {
           this.loadLogs();
+        },
+
+        setStatsRange(days) {
+          this.statsRange = days;
+          this.loadStats();
+        },
+
+        async loadStats() {
+          this.statsLoading = true;
+          try {
+            const res = await fetch('/dashboard/api/stats/' + APP_ID + '?days=' + this.statsRange);
+            const data = await res.json();
+            if (data.ok && data.data) {
+              const stats = data.data.slice().reverse(); // oldest first
+              const labels = stats.map(s => s.date);
+              const errors = stats.map(s => s.error);
+              const warnings = stats.map(s => s.warn);
+              const info = stats.map(s => s.info);
+              const debug = stats.map(s => s.debug);
+
+              // Update totals
+              const totals = stats.reduce((acc, s) => ({
+                debug: acc.debug + s.debug,
+                info: acc.info + s.info,
+                warn: acc.warn + s.warn,
+                error: acc.error + s.error,
+              }), { debug: 0, info: 0, warn: 0, error: 0 });
+              this.statsTotals = totals;
+
+              // Update charts in-place
+              if (ewChart) {
+                ewChart.data.labels = labels;
+                ewChart.data.datasets[0].data = errors;
+                ewChart.data.datasets[1].data = warnings;
+                ewChart.update();
+              }
+              if (trafficChart) {
+                trafficChart.data.labels = labels;
+                trafficChart.data.datasets[0].data = info;
+                trafficChart.data.datasets[1].data = debug;
+                trafficChart.update();
+              }
+            }
+          } catch (err) {
+            console.error('Failed to load stats:', err);
+          } finally {
+            this.statsLoading = false;
+          }
         },
 
         setLevel(level) {
@@ -415,11 +532,15 @@ export function appDetailPage(data: AppDetailData, apps: string[], brand: BrandC
       }
     }
 
-    // Initialize chart
+    // Initialize charts and store instances for later updates via loadStats()
     document.addEventListener('DOMContentLoaded', () => {
-      const ctx = document.getElementById('statsChart');
-      if (ctx) {
-        new Chart(ctx, ${chartConfig});
+      const ewCtx = document.getElementById('errorsWarningsChart');
+      if (ewCtx) {
+        ewChart = new Chart(ewCtx, ${errorsWarningsConfig});
+      }
+      const trafficCtx = document.getElementById('trafficChart');
+      if (trafficCtx) {
+        trafficChart = new Chart(trafficCtx, ${trafficConfig});
       }
     });
   </script>`
