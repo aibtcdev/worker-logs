@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/aibtcdev/worker-logs/compare/v1.1.0...v1.2.0) (2026-03-17)
+
+
+### Features
+
+* **dashboard:** polish charts, add time ranges, and visual refinements ([#17](https://github.com/aibtcdev/worker-logs/issues/17)) ([b27b3a7](https://github.com/aibtcdev/worker-logs/commit/b27b3a7b87b1dfac42a8b484718f96cef15b60ff))
+
 ## [1.1.0](https://github.com/aibtcdev/worker-logs/compare/v1.0.0...v1.1.0) (2026-02-25)
 
 
