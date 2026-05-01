@@ -128,11 +128,14 @@ This repo is a fork of [whoabuddy/worker-logs](https://github.com/whoabuddy/work
 
 ### Deployment Environments
 
-| Environment | Domain | Deploy Command |
-|-------------|--------|----------------|
-| Local dev | localhost:8787 | `npm run dev` |
-| Staging | logs.aibtc.dev | `npm run deploy -- --env staging` |
-| Production | logs.aibtc.com | `npm run deploy -- --env production` |
+| Environment | Domain | Deploy Command | Dry Run |
+|-------------|--------|----------------|---------|
+| Local dev | localhost:8787 | `npm run dev` | — |
+| Top-level (dev only) | workers.dev preview | `npm run deploy` | `npm run deploy:dry-run` |
+| Staging | logs.aibtc.dev | `npm run deploy:staging` | `npm run deploy:dry-run:staging` |
+| Production | logs.aibtc.com | `npm run deploy:production` | `npm run deploy:dry-run:production` |
+
+> **Safety:** the bare `npm run deploy` script targets the top-level dev config, not staging or production. During the worker-logs sunset (see `cloudflare-bill-audit-2026-04.md`), prefer the explicit `deploy:staging` / `deploy:production` scripts so no one accidentally ships a config-less deploy.
 
 ### Syncing with upstream
 
