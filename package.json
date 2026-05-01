@@ -6,6 +6,11 @@
   "scripts": {
     "dev": "npm run wrangler -- dev --ip 0.0.0.0",
     "deploy": "npm run wrangler -- deploy",
+    "deploy:staging": "npm run wrangler -- deploy --env staging",
+    "deploy:production": "npm run wrangler -- deploy --env production",
+    "deploy:dry-run": "npm run wrangler -- deploy --dry-run",
+    "deploy:dry-run:staging": "npm run wrangler -- deploy --env staging --dry-run",
+    "deploy:dry-run:production": "npm run wrangler -- deploy --env production --dry-run",
     "cf-typegen": "npm run wrangler -- types",
     "wrangler": "set -a && . ./.env && set +a && npx wrangler",
     "test": "vitest run",
